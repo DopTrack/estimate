@@ -42,45 +42,48 @@ def define_ideal_doppler_settings():
 
     return observation_settings
 
-def define_observation_settings(Doppler_models):
+def define_observation_settings(Doppler_models={}):
 
     combined_biases = []
 
     # Define absolute arc-wise biases
-    if Doppler_models.get('absolute_bias').get('activated'):
-        arc_wise_times = Doppler_models.get('absolute_bias').get('times')
+    if "absolute_bias" in Doppler_models:
+        if Doppler_models.get('absolute_bias').get('activated'):
+            arc_wise_times = Doppler_models.get('absolute_bias').get('times')
 
-        biases_values = []
-        for i in range(len(arc_wise_times)):
-            biases_values.append(np.zeros(1))
+            biases_values = []
+            for i in range(len(arc_wise_times)):
+                biases_values.append(np.zeros(1))
 
-        arc_wise_absolute_bias = observation.arcwise_absolute_bias(arc_wise_times, biases_values, observation.receiver)
+            arc_wise_absolute_bias = observation.arcwise_absolute_bias(arc_wise_times, biases_values, observation.receiver)
 
-        combined_biases.append(arc_wise_absolute_bias)
+            combined_biases.append(arc_wise_absolute_bias)
 
     # Define relative arc-wise biases
-    if Doppler_models.get('relative_bias').get('activated'):
-        arc_wise_times = Doppler_models.get('relative_bias').get('times')
+    if "relative_bias" in Doppler_models:
+        if Doppler_models.get('relative_bias').get('activated'):
+            arc_wise_times = Doppler_models.get('relative_bias').get('times')
 
-        biases_values = []
-        for i in range(len(arc_wise_times)):
-            biases_values.append(np.zeros(1))
+            biases_values = []
+            for i in range(len(arc_wise_times)):
+                biases_values.append(np.zeros(1))
 
-        arc_wise_relative_bias = observation.arcwise_relative_bias(arc_wise_times, biases_values, observation.receiver)
+            arc_wise_relative_bias = observation.arcwise_relative_bias(arc_wise_times, biases_values, observation.receiver)
 
-        combined_biases.append(arc_wise_relative_bias)
+            combined_biases.append(arc_wise_relative_bias)
 
     # Define arc-wise time biases
-    if Doppler_models.get('time_bias').get('activated'):
-        arc_wise_times = Doppler_models.get('time_bias').get('times')
+    if "time_bias" in Doppler_models:
+        if Doppler_models.get('time_bias').get('activated'):
+            arc_wise_times = Doppler_models.get('time_bias').get('times')
 
-        biases_values = []
-        for i in range(len(arc_wise_times)):
-            biases_values.append(np.zeros(1))
+            biases_values = []
+            for i in range(len(arc_wise_times)):
+                biases_values.append(np.zeros(1))
 
-        arc_wise_time_bias = observation.arc_wise_time_drift_bias(biases_values, arc_wise_times, observation.receiver, arc_wise_times)
+            arc_wise_time_bias = observation.arc_wise_time_drift_bias(biases_values, arc_wise_times, observation.receiver, arc_wise_times)
 
-        combined_biases.append(arc_wise_time_bias)
+            combined_biases.append(arc_wise_time_bias)
 
     # Define all biases
     biases = observation.combined_bias(combined_biases)
@@ -94,53 +97,64 @@ def define_observation_settings(Doppler_models):
 def check_consistency_parameters_observations(parameters_list, obs_models, arc_start_times, passes_start_times):
 
     # absolute biases
-    if parameters_list.get('absolute_bias').get('estimate'):
-        if not obs_models.get('absolute_bias').get('activated'):
-            raise Exception('Error when estimating absolute biases, such biases not defined in observation model.')
-        if parameters_list.get('absolute_bias').get('type') == 'per_pass' and len(obs_models.get('absolute_bias').get('times')) != len(passes_start_times):
-            raise Exception('Error when estimating absolute biases once per pass, biases are not defined per pass in observation models.')
-        elif parameters_list.get('absolute_bias').get('type') == 'per_arc' and len(obs_models.get('absolute_bias').get('times')) != len(arc_start_times):
-            raise Exception('Error when estimating absolute biases once per arc, biases are not defined per arc in observation models.')
-        if parameters_list.get('absolute_bias').get('type') == 'global' and len(obs_models.get('absolute_bias').get('times')) != 1:
-            raise Exception('Error when estimating absolute biases globally, while arc arc-wise biases are defined in observation models.')
+    if "absolute_bias" in parameters_list:
+        if parameters_list.get('absolute_bias').get('estimate'):
+            if "absolute_bias" not in obs_models:
+                raise Exception('Error when estimating absolute biases, such biases not defined in observation model.')
+            else:
+                if not obs_models.get('absolute_bias').get('activated'):
+                    raise Exception('Error when estimating absolute biases, such biases not defined in observation model.')
+                if parameters_list.get('absolute_bias').get('type') == 'per_pass' and len(obs_models.get('absolute_bias').get('times')) != len(passes_start_times):
+                    raise Exception('Error when estimating absolute biases once per pass, biases are not defined per pass in observation models.')
+                elif parameters_list.get('absolute_bias').get('type') == 'per_arc' and len(obs_models.get('absolute_bias').get('times')) != len(arc_start_times):
+                    raise Exception('Error when estimating absolute biases once per arc, biases are not defined per arc in observation models.')
+                if parameters_list.get('absolute_bias').get('type') == 'global' and len(obs_models.get('absolute_bias').get('times')) != 1:
+                    raise Exception('Error when estimating absolute biases globally, while arc arc-wise biases are defined in observation models.')
 
     # relative biases
-    if parameters_list.get('relative_bias').get('estimate'):
-        if not obs_models.get('relative_bias').get('activated'):
-            raise Exception('Error when estimating relative biases, such biases not defined in observation model.')
-        if parameters_list.get('relative_bias').get('type') == 'per_pass' and len(
-                obs_models.get('relative_bias').get('times')) != len(passes_start_times):
-            raise Exception(
-                'Error when estimating relative biases once per pass, biases are not defined per pass in observation models.')
-        elif parameters_list.get('relative_bias').get('type') == 'per_arc' and len(
-                obs_models.get('relative_bias').get('times')) != len(arc_start_times):
-            raise Exception(
-                'Error when estimating relative biases once per arc, biases are not defined per arc in observation models.')
-        if parameters_list.get('relative_bias').get('type') == 'global' and len(
-                obs_models.get('relative_bias').get('times')) != 1:
-            raise Exception(
-                'Error when estimating relative biases globally, while arc arc-wise biases are defined in observation models.')
+    if "relative_bias" in parameters_list:
+        if parameters_list.get('relative_bias').get('estimate'):
+            if "relative_bias" not in obs_models:
+                raise Exception('Error when estimating relative biases, such biases not defined in observation model.')
+            else:
+                if not obs_models.get('relative_bias').get('activated'):
+                    raise Exception('Error when estimating relative biases, such biases not defined in observation model.')
+                if parameters_list.get('relative_bias').get('type') == 'per_pass' and len(
+                        obs_models.get('relative_bias').get('times')) != len(passes_start_times):
+                    raise Exception(
+                        'Error when estimating relative biases once per pass, biases are not defined per pass in observation models.')
+                elif parameters_list.get('relative_bias').get('type') == 'per_arc' and len(
+                        obs_models.get('relative_bias').get('times')) != len(arc_start_times):
+                    raise Exception(
+                        'Error when estimating relative biases once per arc, biases are not defined per arc in observation models.')
+                if parameters_list.get('relative_bias').get('type') == 'global' and len(
+                        obs_models.get('relative_bias').get('times')) != 1:
+                    raise Exception(
+                        'Error when estimating relative biases globally, while arc arc-wise biases are defined in observation models.')
 
     # time biases
-    if parameters_list.get('time_bias').get('estimate'):
-        if not obs_models.get('time_bias').get('activated'):
-            raise Exception(
-                'Error when estimating time biases, such biases not defined in observation model.')
-        if parameters_list.get('time_bias').get('type') == 'per_pass' and len(
-                obs_models.get('time_bias').get('times')) != len(passes_start_times):
-            raise Exception(
-                'Error when estimating time biases once per pass, biases are not defined per pass in observation models.')
-        elif parameters_list.get('time_bias').get('type') == 'per_arc' and len(
-                obs_models.get('time_bias').get('times')) != len(arc_start_times):
-            raise Exception(
-                'Error when estimating time biases once per arc, biases are not defined per arc in observation models.')
-        if parameters_list.get('time_bias').get('type') == 'global' and len(
-                obs_models.get('time_bias').get('times')) != 1:
-            raise Exception(
-                'Error when estimating time biases globally, while arc arc-wise biases are defined in observation models.')
+    if "time_biases" in parameters_list:
+        if parameters_list.get('time_bias').get('estimate'):
+            if "absolute_bias" not in obs_models:
+                raise Exception('Error when estimating time biases, such biases not defined in observation model.')
+            else:
+                if not obs_models.get('time_bias').get('activated'):
+                    raise Exception( 'Error when estimating time biases, such biases not defined in observation model.')
+                if parameters_list.get('time_bias').get('type') == 'per_pass' and len(
+                        obs_models.get('time_bias').get('times')) != len(passes_start_times):
+                    raise Exception(
+                        'Error when estimating time biases once per pass, biases are not defined per pass in observation models.')
+                elif parameters_list.get('time_bias').get('type') == 'per_arc' and len(
+                        obs_models.get('time_bias').get('times')) != len(arc_start_times):
+                    raise Exception(
+                        'Error when estimating time biases once per arc, biases are not defined per arc in observation models.')
+                if parameters_list.get('time_bias').get('type') == 'global' and len(
+                        obs_models.get('time_bias').get('times')) != 1:
+                    raise Exception(
+                        'Error when estimating time biases globally, while arc arc-wise biases are defined in observation models.')
 
 
-def define_parameters(parameters_list, bodies, propagator_settings, initial_time, arc_start_times, passes_start_times, obs_models):
+def define_parameters(parameters_list, bodies, propagator_settings, initial_time, arc_start_times, passes_start_times, obs_models={}):
 
     link_ends = define_link_ends()
     parameter_settings = []
@@ -148,77 +162,85 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
     check_consistency_parameters_observations(parameters_list, obs_models, arc_start_times, passes_start_times)
 
     # Initial states
-    if parameters_list.get('initial_state_delfi').get('estimate'):
-        if parameters_list.get('initial_state_delfi').get('type') == 'per_arc':
-            initial_states_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies, arc_start_times)
-        else:
-            raise Exception('Error, Delfi initial states have to be estimated for every arc.')
-        for settings in initial_states_settings:
-            parameter_settings.append(settings)
+    if "initial_state_delfi" in parameters_list:
+        if parameters_list.get('initial_state_delfi').get('estimate'):
+            if parameters_list.get('initial_state_delfi').get('type') == 'per_arc':
+                initial_states_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies, arc_start_times)
+            else:
+                raise Exception('Error, Delfi initial states have to be estimated for every arc.')
+            for settings in initial_states_settings:
+                parameter_settings.append(settings)
 
     # Absolute biases
-    if parameters_list.get('absolute_bias').get('estimate'):
-        if parameters_list.get('absolute_bias').get('type') == 'per_pass':
-            parameter_settings.append(estimation_setup.parameter.arcwise_absolute_observation_bias(
-                link_ends, observation.one_way_doppler_type, passes_start_times, observation.receiver))
-        elif parameters_list.get('absolute_bias').get('type') == 'per_arc':
-            parameter_settings.append(estimation_setup.parameter.arcwise_absolute_observation_bias(
-                link_ends, observation.one_way_doppler_type, arc_start_times, observation.receiver))
-        elif parameters_list.get('absolute_bias').get('type') == 'global':
-            parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(link_ends, observation.one_way_doppler_type))
+    if "absolute_bias" in parameters_list:
+        if parameters_list.get('absolute_bias').get('estimate'):
+            if parameters_list.get('absolute_bias').get('type') == 'per_pass':
+                parameter_settings.append(estimation_setup.parameter.arcwise_absolute_observation_bias(
+                    link_ends, observation.one_way_doppler_type, passes_start_times, observation.receiver))
+            elif parameters_list.get('absolute_bias').get('type') == 'per_arc':
+                parameter_settings.append(estimation_setup.parameter.arcwise_absolute_observation_bias(
+                    link_ends, observation.one_way_doppler_type, arc_start_times, observation.receiver))
+            elif parameters_list.get('absolute_bias').get('type') == 'global':
+                parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(link_ends, observation.one_way_doppler_type))
 
     # Relative biases
-    if parameters_list.get('relative_bias').get('estimate'):
-        if parameters_list.get('relative_bias').get('type') == 'per_pass':
-            parameter_settings.append(estimation_setup.parameter.arcwise_relative_observation_bias(
-                link_ends, observation.one_way_doppler_type, passes_start_times, observation.receiver))
-        elif parameters_list.get('relative_bias').get('type') == 'per_arc':
-            parameter_settings.append(estimation_setup.parameter.arcwise_relative_observation_bias(
-                link_ends, observation.one_way_doppler_type, arc_start_times, observation.receiver))
-        elif parameters_list.get('relative_bias').get('type') == 'global':
-            parameter_settings.append( estimation_setup.parameter.relative_observation_bias(link_ends, observation.one_way_doppler_type))
+    if "relative_bias" in parameters_list:
+        if parameters_list.get('relative_bias').get('estimate'):
+            if parameters_list.get('relative_bias').get('type') == 'per_pass':
+                parameter_settings.append(estimation_setup.parameter.arcwise_relative_observation_bias(
+                    link_ends, observation.one_way_doppler_type, passes_start_times, observation.receiver))
+            elif parameters_list.get('relative_bias').get('type') == 'per_arc':
+                parameter_settings.append(estimation_setup.parameter.arcwise_relative_observation_bias(
+                    link_ends, observation.one_way_doppler_type, arc_start_times, observation.receiver))
+            elif parameters_list.get('relative_bias').get('type') == 'global':
+                parameter_settings.append( estimation_setup.parameter.relative_observation_bias(link_ends, observation.one_way_doppler_type))
 
     # Time biases
-    if parameters_list.get('time_bias').get('estimate'):
-        if parameters_list.get('time_bias').get('type') == 'per_pass':
-            parameter_settings.append(estimation_setup.parameter.arcwise_time_drift_observation_bias(
-                link_ends, observation.one_way_doppler_type, passes_start_times, passes_start_times, observation.receiver))
-        elif parameters_list.get('time_bias').get('type') == 'per_arc':
-            parameter_settings.append(estimation_setup.parameter.arcwise_time_drift_observation_bias(
-                link_ends, observation.one_way_doppler_type, arc_start_times, arc_start_times, observation.receiver))
-        elif parameters_list.get('time_bias').get('type') == 'global':
-            parameter_settings.append(estimation_setup.parameter.time_drift_observation_bias(link_ends, observation.one_way_doppler_type,
-                                      initial_time, observation.receiver))
+    if "time_bias" in parameters_list:
+        if parameters_list.get('time_bias').get('estimate'):
+            if parameters_list.get('time_bias').get('type') == 'per_pass':
+                parameter_settings.append(estimation_setup.parameter.arcwise_time_drift_observation_bias(
+                    link_ends, observation.one_way_doppler_type, passes_start_times, passes_start_times, observation.receiver))
+            elif parameters_list.get('time_bias').get('type') == 'per_arc':
+                parameter_settings.append(estimation_setup.parameter.arcwise_time_drift_observation_bias(
+                    link_ends, observation.one_way_doppler_type, arc_start_times, arc_start_times, observation.receiver))
+            elif parameters_list.get('time_bias').get('type') == 'global':
+                parameter_settings.append(estimation_setup.parameter.time_drift_observation_bias(link_ends, observation.one_way_doppler_type,
+                                          initial_time, observation.receiver))
 
     # Drag coefficient(s)
-    if parameters_list.get('drag_coefficient').get('estimate'):
-        if parameters_list.get('drag_coefficient').get('type') == 'per_pass':
-            parameter_settings.append(estimation_setup.parameter.arcwise_constant_drag_coefficient("Delfi", passes_start_times))
-        elif parameters_list.get('drag_coefficient').get('type') == 'per_arc':
-            parameter_settings.append(estimation_setup.parameter.arcwise_constant_drag_coefficient("Delfi", arc_start_times))
-        elif parameters_list.get('drag_coefficient').get('type') == 'global':
-            parameter_settings.append(estimation_setup.parameter.constant_drag_coefficient("Delfi"))
+    if "drag_coefficient" in parameters_list:
+        if parameters_list.get('drag_coefficient').get('estimate'):
+            if parameters_list.get('drag_coefficient').get('type') == 'per_pass':
+                parameter_settings.append(estimation_setup.parameter.arcwise_constant_drag_coefficient("Delfi", passes_start_times))
+            elif parameters_list.get('drag_coefficient').get('type') == 'per_arc':
+                parameter_settings.append(estimation_setup.parameter.arcwise_constant_drag_coefficient("Delfi", arc_start_times))
+            elif parameters_list.get('drag_coefficient').get('type') == 'global':
+                parameter_settings.append(estimation_setup.parameter.constant_drag_coefficient("Delfi"))
 
     # Gravitational parameter
-    if parameters_list.get('gravitational_parameter').get('estimate'):
-        if parameters_list.get('gravitational_parameter').get('type') == 'global':
-            parameter_settings.append(estimation_setup.parameter.gravitational_parameter("Earth"))
-        else:
-            raise Exception('Error, Earth gravitational parameter can only be estimated globally.')
+    if "gravitational_parameter" in parameters_list:
+        if parameters_list.get('gravitational_parameter').get('estimate'):
+            if parameters_list.get('gravitational_parameter').get('type') == 'global':
+                parameter_settings.append(estimation_setup.parameter.gravitational_parameter("Earth"))
+            else:
+                raise Exception('Error, Earth gravitational parameter can only be estimated globally.')
 
     # C20 coefficient
-    if parameters_list.get('C20').get('estimate'):
-        if parameters_list.get('C20').get('type') == 'global':
-            parameter_settings.append(estimation_setup.parameter.spherical_harmonics_c_coefficients("Earth", 2,0,2,0))
-        else:
-            raise Exception('Error, C20 coefficient can only be estimated globally.')
+    if "C20" in parameters_list:
+        if parameters_list.get('C20').get('estimate'):
+            if parameters_list.get('C20').get('type') == 'global':
+                parameter_settings.append(estimation_setup.parameter.spherical_harmonics_c_coefficients("Earth", 2,0,2,0))
+            else:
+                raise Exception('Error, C20 coefficient can only be estimated globally.')
 
     # C22 coefficient
-    if parameters_list.get('C22').get('estimate'):
-        if parameters_list.get('C22').get('type') == 'global':
-            parameter_settings.append(estimation_setup.parameter.spherical_harmonics_c_coefficients("Earth", 2,2,2,2))
-        else:
-            raise Exception('Error, C22 coefficient can only be estimated globally.')
+    if "C22" in parameters_list:
+        if parameters_list.get('C22').get('estimate'):
+            if parameters_list.get('C22').get('type') == 'global':
+                parameter_settings.append(estimation_setup.parameter.spherical_harmonics_c_coefficients("Earth", 2,2,2,2))
+            else:
+                raise Exception('Error, C22 coefficient can only be estimated globally.')
 
     parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
 

@@ -24,15 +24,15 @@ j2000_days = 2451545.0
 # from previous passes' yml file?
 julian_date, initial_state_teme = get_tle_initial_conditions(metadata_folder + 'Delfi-C3_32789_202004020904.yml')
 
-initial_conditions_time = (julian_date - j2000_days) * 86400.0
-start_recording_day = get_start_next_day(initial_conditions_time, j2000_days)
+initial_epoch = (julian_date - j2000_days) * 86400.0
+start_recording_day = get_start_next_day(initial_epoch, j2000_days)
 
 nb_days_to_propagate = 1
 final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
 
-print('initial time: ', initial_conditions_time)
+print('initial epoch: ', initial_epoch)
 print('initial state TEME: ', initial_state_teme)
-print('final_epoch', final_epoch)
+print('final epoch', final_epoch)
 
 
 # 1/ Propagate dynamics of Delfi
@@ -48,10 +48,10 @@ srp_coefficient_delfi = 2.4
 bodies = define_system_bodies(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
 
 # Set the initial state of Delfi
-initial_state = element_conversion.teme_state_to_j2000(initial_conditions_time, initial_state_teme)
+initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
 
 # Create numerical integrator settings
-integrator_settings = propagation_setup.integrator.runge_kutta_4(initial_conditions_time, 10.0)
+integrator_settings = propagation_setup.integrator.runge_kutta_4(initial_epoch, 10.0)
 
 # Define accelerations exerted on Delfi
 # Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
@@ -75,7 +75,7 @@ accelerations = create_accelerations(acceleration_models, bodies)
 propagator_settings = create_propagator_settings(initial_state, final_epoch, accelerations)
 
 # Propagate dynamics
-propagated_orbit = propagate_initial_state(initial_state, initial_conditions_time, final_epoch, bodies, accelerations)
+propagated_orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
 
 # Plot propagated orbit
 fig = plt.figure(figsize=(6,6), dpi=125)
@@ -121,7 +121,7 @@ ax = fig.add_subplot()
 ax.set_title(f'Doppler')
 ax.plot((simulated_obs_times - start_recording_day)/3600, - simulated_doppler * constants.SPEED_OF_LIGHT, label='simulated', color='red', linestyle='none', marker='.')
 ax.legend()
-ax.set_xlabel('Time [s]')
+ax.set_xlabel('Time [hours since start of day]')
 ax.set_ylabel('Doppler [m/s]')
 plt.grid()
 plt.show()
@@ -145,7 +145,7 @@ fig = plt.figure(figsize=(6,6), dpi=125)
 ax = fig.add_subplot()
 ax.set_title(f'Doppler')
 ax.plot((np.array(simulated_obs_times) - start_recording_day)/3600, convert_frequencies_to_range_rate(simulated_doppler), label='simulated', color='red', linestyle='none', marker='.')
-ax.plot((np.array(observation_times) - start_recording_day)/3600, convert_frequencies_to_range_rate(real_doppler), label='measured', color='blue', linestyle='none', marker='.')
+ax.plot((np.array(observation_times) - start_recording_day)/3600, convert_frequencies_to_range_rate(real_doppler), label='recorded', color='blue', linestyle='none', marker='.')
 ax.legend()
 ax.set_xlabel('Time [hours since start of day]')
 ax.set_ylabel('Doppler [m/s]')

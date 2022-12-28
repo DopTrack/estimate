@@ -53,7 +53,7 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
     fraction_day = float(str(line1_tle[20:23]) + '.' + str(line1_tle[24:32]))
     # print('year', year, 'day', day, 'fraction_day', fraction_day)
     mon, day, hr, minute, sec = util.days2mdhms(year, fraction_day)
-    print(year,'-',mon,'-',day,' ', hr,':',minute,':',sec)
+    # print(year,'-',mon,'-',day,' ', hr,':',minute,':',sec)
 
     tle_time = datetime.datetime(year, int(mon), int(day), int(hr), int(minute), int(sec))
     # print('time TLE', tle_time)
@@ -75,6 +75,27 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
 
 def convert_frequencies_to_range_rate(frequencies):
     return -frequencies * constants.SPEED_OF_LIGHT
+
+
+def get_days_starting_times(passes_start_times):
+    j2000_days = 2451545.0
+
+    days_start_times = []
+    for i in range(len(passes_start_times)):
+        current_day = math.floor(passes_start_times[i] / 86400.0 + j2000_days - 0.5) + 0.5
+        current_day = (current_day - j2000_days) * 86400.0
+        if (current_day in days_start_times) == False:
+            days_start_times.append(current_day)
+
+    return days_start_times
+
+
+def get_days_end_times(days_start_times):
+    days_end_times = []
+    for i in range(len(days_start_times)):
+        days_end_times.append(days_start_times[i] + 86400.0)
+
+    return days_end_times
 
 
 
