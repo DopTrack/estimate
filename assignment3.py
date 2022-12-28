@@ -1,33 +1,29 @@
 # Load standard modules
 import statistics
-import numpy as np
 # Uncomment the following to make plots interactive
 # %matplotlib widget
 from matplotlib import pyplot as plt
-import math
 
-from tudatpy.kernel import constants
-
-import environment
-import propagation
-from estimation import define_doptrack_station, define_parameters, define_observation_settings, simulate_ideal_observations, \
+from propagation_functions import environment
+import propagation_functions
+from estimation_functions.estimation import define_doptrack_station, define_parameters, define_observation_settings, simulate_ideal_observations, \
     run_estimation
-from observations_data import load_and_format_observations
-import math
+from estimation_functions.observations_data import load_and_format_observations
 
-from util_functions import *
+from utility_functions.time import *
+from utility_functions.tle import *
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel import numerical_simulation
-from tudatpy.kernel.numerical_simulation import environment_setup
 from tudatpy.kernel.numerical_simulation import propagation_setup
-from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
-from tudatpy.kernel.numerical_simulation.estimation_setup import observation
-from tudatpy.kernel.numerical_simulation.environment_setup import ephemeris
+from tudatpy.kernel.numerical_simulation import estimation_setup
 from tudatpy.kernel.astro import element_conversion
-from tudatpy.util import result2array
+
+##################################
+## WARNING: NOT WORKING YET!
+###################################
 
 j2000_days = 2451545.0
 
@@ -57,7 +53,7 @@ julian_date, initial_state_teme = get_tle_initial_conditions(metadata_folder + m
 initial_epoch = (julian_date - j2000_days) * 86400.0
 start_recording_day = get_start_next_day(initial_epoch, j2000_days)
 
-# Calculate final propagation epoch
+# Calculate final propagation_functions epoch
 nb_days_to_propagate = 8
 final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
 
@@ -74,7 +70,7 @@ print(arc_start_times)
 # Load spice kernels
 spice.load_standard_kernels()
 
-# Define propagation environment
+# Define propagation_functions environment
 mass_delfi = 2.2
 reference_area_delfi = 0.035
 drag_coefficient_delfi = 1.4
@@ -103,19 +99,19 @@ acceleration_models = dict(
         'drag': True
     }
 )
-accelerations = propagation.create_accelerations(acceleration_models, bodies)
+accelerations = propagation_functions.create_accelerations(acceleration_models, bodies)
 
 # Propagate dynamics and retrieve Delfi's initial state at the start of each arc
-orbit = propagation.propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
-arc_wise_initial_states = propagation.get_initial_states(bodies, arc_start_times)
+orbit = propagation_functions.propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
+arc_wise_initial_states = propagation_functions.get_initial_states(bodies, arc_start_times)
 
 
-# Redefine environment to allow for multi-arc dynamics propagation
+# Redefine environment to allow for multi-arc dynamics propagation_functions
 bodies = environment.define_system_bodies(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, True)
-accelerations = propagation.create_accelerations(acceleration_models, bodies)
+accelerations = propagation_functions.create_accelerations(acceleration_models, bodies)
 
 # Define multi-arc propagator settings
-multi_arc_propagator_settings = propagation.define_multi_arc_propagation_settings(arc_wise_initial_states, arc_end_times, bodies, accelerations)
+multi_arc_propagator_settings = propagation_functions.define_multi_arc_propagation_settings(arc_wise_initial_states, arc_end_times, bodies, accelerations)
 
 # Create the DopTrack station
 define_doptrack_station(bodies)
@@ -186,7 +182,7 @@ ideal_observations = simulate_ideal_observations(observation_times, estimator, b
 truth_parameters = parameters_to_estimate.parameter_vector
 nb_parameters = len(truth_parameters)
 
-# Perform estimation
+# Perform estimation_functions
 nb_iterations = 10
 nb_arcs = len(arc_start_times)
 pod_output = run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs, nb_iterations)

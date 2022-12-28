@@ -15,7 +15,7 @@ def create_accelerations(acceleration_models, bodies):
     # Define bodies that are propagated
     bodies_to_propagate = ["Delfi"]
 
-    # Define central bodies of propagation
+    # Define central bodies of propagation_functions
     central_bodies = ["Earth"]
 
     # Define the accelerations acting on Delfi
@@ -58,7 +58,7 @@ def create_propagator_settings(initial_state, final_time, accelerations):
     # Define bodies that are propagated
     bodies_to_propagate = ["Delfi"]
 
-    # Define central bodies of propagation
+    # Define central bodies of propagation_functions
     central_bodies = ["Earth"]
 
     # Create termination settings

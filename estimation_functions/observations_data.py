@@ -1,9 +1,8 @@
 # Load standard modules
 import numpy as np
 
-import util_functions
-from estimation import define_link_ends
-from util_functions import jday
+from estimation_functions.estimation import define_link_ends
+from utility_functions.time import jday
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -77,3 +76,7 @@ def load_and_format_observations(data_folder, data, index_files=[]):
     observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
 
     return passes_start_times, obs_times, observations_set
+
+
+def convert_frequencies_to_range_rate(frequencies):
+    return -frequencies * constants.SPEED_OF_LIGHT

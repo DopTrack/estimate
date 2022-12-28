@@ -1,13 +1,12 @@
 # Load standard modules
-import statistics
-import numpy as np
 from matplotlib import pyplot as plt
 
-from environment import *
-from propagation import *
-from estimation import *
-from util_functions import *
-from observations_data import *
+from propagation_functions.environment import *
+from propagation_functions.propagation import *
+from utility_functions.time import *
+from utility_functions.tle import *
+from estimation_functions.observations_data import *
+from estimation_functions.estimation import *
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -40,7 +39,7 @@ print('final epoch', final_epoch)
 # Load spice kernels
 spice.load_standard_kernels()
 
-# Define propagation environment
+# Define propagation_functions environment
 mass_delfi = 2.2
 reference_area_delfi = 0.035
 drag_coefficient_delfi = 1.4

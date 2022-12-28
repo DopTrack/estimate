@@ -1,19 +1,13 @@
-import math
-
 import numpy as np
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
-from tudatpy.kernel.interface import spice
 from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.numerical_simulation import environment_setup
-from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
 from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 from tudatpy.kernel.astro import element_conversion
-from tudatpy.kernel.numerical_simulation.environment_setup import ephemeris
 
-import propagation
 
 def define_doptrack_station(bodies):
     station_altitude = 0.0
@@ -274,7 +268,7 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
             inv_cov[i*6+j, i*6+j] = 1.0 / (apriori_covariance_position * apriori_covariance_position)
             inv_cov[i*6+3+j, i*6+3+j] = 1.0 / (apriori_covariance_velocity * apriori_covariance_velocity)
 
-    # Create input object for estimation, adding observations and parameter set information
+    # Create input object for estimation_functions, adding observations and parameter set information
     pod_input = estimation.PodInput(observations_set, parameters_to_estimate.parameter_set_size,
                                     inverse_apriori_covariance=inv_cov)
     pod_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
@@ -287,11 +281,11 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
         {estimation_setup.observation.one_way_doppler_type: noise_level ** -2}
     pod_input.set_constant_weight_per_observable(weights_per_observable)
 
-    # Perform estimation and return pod_output
+    # Perform estimation_functions and return pod_output
     return estimator.perform_estimation(pod_input, convergence_check)
 
 
-# Function creating a dummy estimator (for 1st part of the tutorial when observations have to be simulated but no estimation
+# Function creating a dummy estimator (for 1st part of the tutorial when observations have to be simulated but no estimation_functions
 # needs to be run yet)
 def create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings):
 
