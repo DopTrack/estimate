@@ -15,6 +15,9 @@ from sgp4 import ext as util
 from tudatpy.kernel import constants
 
 
+j2000_days = 2451545.0
+
+
 def jday(year, mon, day, hr, minute, sec):
 
   return (367.0 * year -
@@ -26,12 +29,12 @@ def jday(year, mon, day, hr, minute, sec):
           )
 
 
-def get_start_next_day(time, j2000_days):
+def get_start_next_day(time):
     day = math.ceil(time / 86400.0 + j2000_days - 0.5) + 0.5
     return (day - j2000_days) * 86400.0
 
 
-def get_start_current_day(time, j2000_days):
+def get_start_current_day(time):
     day = math.floor(time / 86400.0 + j2000_days - 0.5) + 0.5
     return (day - j2000_days) * 86400.0
 

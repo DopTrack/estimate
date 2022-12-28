@@ -14,6 +14,9 @@ from sgp4 import ext as util
 
 from tudatpy.kernel import constants
 
+from utility_functions.time import j2000_days
+
+
 def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
 
     # Load recording
@@ -37,9 +40,6 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
     # print('time TLE', tle_time)
     state_teme = delfi_tle.state_teme(tle_time)
 
-    # print('initial ', state_teme_time_utc.position)
-    # print('initial ', state_teme_time_utc.velocity)
-
     # Compute initial Julian date
     julian_date = util.jday(year, int(mon), int(day), int(hr), int(minute), int(sec))
     # print('julian date', julian_date)
@@ -48,4 +48,6 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
         [state_teme.position.x, state_teme.position.y, state_teme.position.z,
          state_teme.velocity.u, state_teme.velocity.v, state_teme.velocity.w])
 
-    return julian_date, initial_state_array
+    initial_time = (julian_date - j2000_days) * 86400.0
+
+    return initial_time, initial_state_array

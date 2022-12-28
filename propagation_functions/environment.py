@@ -23,7 +23,10 @@ def define_body_settings(multi_arc_ephemeris=False):
 
     return body_settings
 
-def define_system_bodies(mass, reference_area, drag_coefficient, srp_coefficient, multi_arc_ephemeris = False):
+def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, multi_arc_ephemeris = False):
+
+    # Load spice kernels
+    spice.load_standard_kernels()
 
     # Define body settings
     body_settings = define_body_settings(multi_arc_ephemeris)
