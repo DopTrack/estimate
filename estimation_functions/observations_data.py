@@ -68,10 +68,15 @@ def load_and_format_observations(data_folder, data, index_files=[]):
     for i in range(len(existing_data)):
         obs_values.append(np.array([-existing_data[i, 1]/constants.SPEED_OF_LIGHT]))
 
+    # Define link ends
+    link_ends = dict()
+    link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+    link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+
     # Set existing observations
-    existing_observation_set = (define_link_ends(), (obs_values, obs_times))
+    existing_observation_set = (link_ends, (obs_values, obs_times))
     observations_input = dict()
-    observations_input[observation.one_way_doppler_type] = existing_observation_set
+    observations_input[observation.one_way_instantaneous_doppler_type] = existing_observation_set
 
     observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
 
@@ -79,4 +84,4 @@ def load_and_format_observations(data_folder, data, index_files=[]):
 
 
 def convert_frequencies_to_range_rate(frequencies):
-    return -frequencies * constants.SPEED_OF_LIGHT
+    return frequencies * constants.SPEED_OF_LIGHT

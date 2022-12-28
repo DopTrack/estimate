@@ -54,7 +54,8 @@ def create_integrator_settings(initial_time, time_step: float = 10.0):
     return propagation_setup.integrator.runge_kutta_4(initial_time, time_step)
 
 
-def create_propagator_settings(initial_state, final_time, accelerations):
+def create_propagator_settings(initial_state, initial_time, final_time, accelerations):
+
     # Define bodies that are propagated
     bodies_to_propagate = ["Delfi"]
 
@@ -64,6 +65,9 @@ def create_propagator_settings(initial_state, final_time, accelerations):
     # Create termination settings
     termination_condition = propagation_setup.propagator.time_termination(final_time)
 
+    # Define integrator settings
+    integrator_settings = create_integrator_settings(initial_time)
+
     # Define dependent variables
     dependent_variables = [
         propagation_setup.dependent_variable.keplerian_state("Delfi", "Earth"),
@@ -72,7 +76,7 @@ def create_propagator_settings(initial_state, final_time, accelerations):
     ]
 
     return propagation_setup.propagator.translational(
-        central_bodies, accelerations, bodies_to_propagate, initial_state, termination_condition, output_variables=dependent_variables)
+        central_bodies, accelerations, bodies_to_propagate, initial_state, initial_time, integrator_settings, termination_condition, output_variables=dependent_variables)
 
 
 def propagate_initial_state(initial_state, initial_time, final_time, bodies, accelerations):
@@ -81,10 +85,10 @@ def propagate_initial_state(initial_state, initial_time, final_time, bodies, acc
     integrator_settings = create_integrator_settings(initial_time)
 
     # Create propagator settings
-    single_arc_propagator_settings = create_propagator_settings(initial_state, final_time, accelerations)
+    single_arc_propagator_settings = create_propagator_settings(initial_state, initial_time, final_time, accelerations)
 
     # Propagate dynamics
-    simulator = numerical_simulation.SingleArcSimulator(bodies, integrator_settings, single_arc_propagator_settings, 1, 0, 1)
+    simulator = numerical_simulation.create_dynamics_simulator(bodies, single_arc_propagator_settings, 1)
 
     cartesian_states = result2array(simulator.state_history)
     dependent_variables = result2array(simulator.dependent_variable_history)

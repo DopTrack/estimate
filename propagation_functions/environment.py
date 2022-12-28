@@ -53,4 +53,3 @@ def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, 
     environment_setup.add_radiation_pressure_interface(bodies, "Delfi", radiation_pressure_settings)
 
     return bodies
-

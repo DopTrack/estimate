@@ -25,16 +25,16 @@ def define_link_ends():
 
     # Define the uplink link ends for one-way observable
     link_ends = dict()
-    link_ends[observation.receiver] = ("Earth", "DopTrackStation")
-    link_ends[observation.transmitter] = ("Delfi", "")
+    link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+    link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
 
-    return link_ends
+    return observation.link_definition(link_ends)
 
 
 def define_ideal_doppler_settings():
 
     # Create observation settings for each link/observable
-    observation_settings = [observation.one_way_open_loop_doppler(define_link_ends())]
+    observation_settings = [observation.one_way_doppler_instantaneous(define_link_ends())]
 
     return observation_settings
 
@@ -245,7 +245,7 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
 
 def simulate_observations(observation_times, observation_settings, propagator_settings, bodies, initial_time, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_doppler_type] = [define_link_ends()]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [define_link_ends()]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
@@ -254,8 +254,9 @@ def simulate_observations(observation_times, observation_settings, propagator_se
     integrator_settings = create_integrator_settings(initial_time)
     estimator = create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings)
 
-    elevation_condition = observation.elevation_angle_viability(define_link_ends()[observation.receiver], np.deg2rad(min_elevation_angle))
-    observation.add_viability_check_to_settings(observation_simulation_settings, [elevation_condition])
+    elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
+    observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition], observation.one_way_instantaneous_doppler_type,
+                                                                define_link_ends())
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
@@ -267,7 +268,9 @@ def simulate_observations_from_estimator(observation_times, estimator, bodies, m
         link_ends_per_obs, observation_times, observation.receiver)
 
     elevation_condition = observation.elevation_angle_viability(define_link_ends()[observation.receiver], np.deg2rad(min_elevation_angle))
-    observation.add_viability_check_to_settings(observation_simulation_settings, [elevation_condition])
+    observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition],
+                                                                observation.one_way_instantaneous_doppler_type,
+                                                                define_link_ends())
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
@@ -317,5 +320,4 @@ def create_dummy_estimator(bodies, propagator_settings, integrator_settings, obs
     estimation_setup.print_parameter_names(parameters_to_estimate)
 
     # Create the estimator object
-    return numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings,
-                                          integrator_settings, propagator_settings)
+    return numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, propagator_settings, True)

@@ -73,7 +73,7 @@ acceleration_models = dict(
 accelerations = create_accelerations(acceleration_models, bodies)
 
 # Create propagator settings
-propagator_settings = create_propagator_settings(initial_state, final_epoch, accelerations)
+propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
 
 # Propagate dynamics of the Delfi satellite from initial_epoch to final_epoch, starting from initial_state
 # The propagation output is given in cartesian and keplerian states, and the latitude/longitude of the spacecraft are also saved.
@@ -122,7 +122,7 @@ simulated_doppler = simulated_observations.concatenated_observations
 fig = plt.figure(figsize=(6,6), dpi=125)
 ax = fig.add_subplot()
 ax.set_title(f'Doppler')
-ax.plot((simulated_obs_times - start_recording_day)/3600, - simulated_doppler * constants.SPEED_OF_LIGHT, label='simulated', color='red', linestyle='none', marker='.')
+ax.plot((simulated_obs_times - start_recording_day)/3600, simulated_doppler, label='simulated', color='red', linestyle='none', marker='.')
 ax.legend()
 ax.set_xlabel('Time [hours since start of day]')
 ax.set_ylabel('Doppler [m/s]')
@@ -149,7 +149,7 @@ real_doppler = observations_set.concatenated_observations
 fig = plt.figure(figsize=(6,6), dpi=125)
 ax = fig.add_subplot()
 ax.set_title(f'Doppler')
-ax.plot((np.array(simulated_obs_times) - start_recording_day)/3600, convert_frequencies_to_range_rate(simulated_doppler), label='simulated', color='red', linestyle='none', marker='.')
+ax.plot((np.array(simulated_obs_times) - start_recording_day)/3600, simulated_doppler, label='simulated', color='red', linestyle='none', marker='.')
 ax.plot((np.array(observation_times) - start_recording_day)/3600, convert_frequencies_to_range_rate(real_doppler), label='recorded', color='blue', linestyle='none', marker='.')
 ax.legend()
 ax.set_xlabel('Time [hours since start of day]')
