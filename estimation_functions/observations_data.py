@@ -66,7 +66,8 @@ def load_and_format_observations(data_folder, data, index_files=[]):
     obs_times = existing_data[:, 0].tolist()
     obs_values = []
     for i in range(len(existing_data)):
-        obs_values.append(np.array([-existing_data[i, 1]/constants.SPEED_OF_LIGHT]))
+        # obs_values.append(np.array([-existing_data[i, 1]/constants.SPEED_OF_LIGHT]))
+        obs_values.append(np.array([-existing_data[i, 1]]))
 
     # Define link ends
     link_ends = dict()
@@ -84,4 +85,4 @@ def load_and_format_observations(data_folder, data, index_files=[]):
 
 
 def convert_frequencies_to_range_rate(frequencies):
-    return frequencies * constants.SPEED_OF_LIGHT
+    return frequencies #* constants.SPEED_OF_LIGHT

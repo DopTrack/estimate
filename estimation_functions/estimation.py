@@ -152,7 +152,10 @@ def check_consistency_parameters_observations(parameters_list, obs_models, arc_s
 
 def define_parameters(parameters_list, bodies, propagator_settings, initial_time, arc_start_times, passes_start_times, obs_models={}):
 
-    link_ends = define_link_ends()
+    link_ends = dict()
+    link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+    link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+
     parameter_settings = []
 
     check_consistency_parameters_observations(parameters_list, obs_models, arc_start_times, passes_start_times)
@@ -172,36 +175,38 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
         if parameters_list.get('absolute_bias').get('estimate'):
             if parameters_list.get('absolute_bias').get('type') == 'per_pass':
                 parameter_settings.append(estimation_setup.parameter.arcwise_absolute_observation_bias(
-                    link_ends, observation.one_way_doppler_type, passes_start_times, observation.receiver))
+                    define_link_ends(), observation.one_way_instantaneous_doppler_type, passes_start_times, observation.receiver))
             elif parameters_list.get('absolute_bias').get('type') == 'per_arc':
                 parameter_settings.append(estimation_setup.parameter.arcwise_absolute_observation_bias(
-                    link_ends, observation.one_way_doppler_type, arc_start_times, observation.receiver))
+                    define_link_ends(), observation.one_way_instantaneous_doppler_type, arc_start_times, observation.receiver))
             elif parameters_list.get('absolute_bias').get('type') == 'global':
-                parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(link_ends, observation.one_way_doppler_type))
+                parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(
+                    define_link_ends(), observation.one_way_instantaneous_doppler_type))
 
     # Relative biases
     if "relative_bias" in parameters_list:
         if parameters_list.get('relative_bias').get('estimate'):
             if parameters_list.get('relative_bias').get('type') == 'per_pass':
                 parameter_settings.append(estimation_setup.parameter.arcwise_relative_observation_bias(
-                    link_ends, observation.one_way_doppler_type, passes_start_times, observation.receiver))
+                    define_link_ends(), observation.one_way_instantaneous_doppler_type, passes_start_times, observation.receiver))
             elif parameters_list.get('relative_bias').get('type') == 'per_arc':
                 parameter_settings.append(estimation_setup.parameter.arcwise_relative_observation_bias(
-                    link_ends, observation.one_way_doppler_type, arc_start_times, observation.receiver))
+                    define_link_ends(), observation.one_way_instantaneous_doppler_type, arc_start_times, observation.receiver))
             elif parameters_list.get('relative_bias').get('type') == 'global':
-                parameter_settings.append( estimation_setup.parameter.relative_observation_bias(link_ends, observation.one_way_doppler_type))
+                parameter_settings.append( estimation_setup.parameter.relative_observation_bias(
+                    define_link_ends(), observation.one_way_instantaneous_doppler_type))
 
     # Time biases
     if "time_bias" in parameters_list:
         if parameters_list.get('time_bias').get('estimate'):
             if parameters_list.get('time_bias').get('type') == 'per_pass':
                 parameter_settings.append(estimation_setup.parameter.arcwise_time_drift_observation_bias(
-                    link_ends, observation.one_way_doppler_type, passes_start_times, passes_start_times, observation.receiver))
+                    link_ends, observation.one_way_instantaneous_doppler_type, passes_start_times, passes_start_times, observation.receiver))
             elif parameters_list.get('time_bias').get('type') == 'per_arc':
                 parameter_settings.append(estimation_setup.parameter.arcwise_time_drift_observation_bias(
-                    link_ends, observation.one_way_doppler_type, arc_start_times, arc_start_times, observation.receiver))
+                    link_ends, observation.one_way_instantaneous_doppler_type, arc_start_times, arc_start_times, observation.receiver))
             elif parameters_list.get('time_bias').get('type') == 'global':
-                parameter_settings.append(estimation_setup.parameter.time_drift_observation_bias(link_ends, observation.one_way_doppler_type,
+                parameter_settings.append(estimation_setup.parameter.time_drift_observation_bias(link_ends, observation.one_way_instantaneous_doppler_type,
                                           initial_time, observation.receiver))
 
     # Drag coefficient(s)
@@ -263,11 +268,11 @@ def simulate_observations(observation_times, observation_settings, propagator_se
 
 def simulate_observations_from_estimator(observation_times, estimator, bodies, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_doppler_type] = [define_link_ends()]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [define_link_ends()]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
-    elevation_condition = observation.elevation_angle_viability(define_link_ends()[observation.receiver], np.deg2rad(min_elevation_angle))
+    elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition],
                                                                 observation.one_way_instantaneous_doppler_type,
                                                                 define_link_ends())
@@ -291,20 +296,21 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
             inv_cov[i*6+3+j, i*6+3+j] = 1.0 / (apriori_covariance_velocity * apriori_covariance_velocity)
 
     # Create input object for estimation_functions, adding observations and parameter set information
-    pod_input = estimation.PodInput(observations_set, parameters_to_estimate.parameter_set_size,
-                                    inverse_apriori_covariance=inv_cov)
+    pod_input = estimation.PodInput(observations_set, inverse_apriori_covariance=inv_cov)
     pod_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
 
     convergence_check = estimation.estimation_convergence_checker(nb_iterations)
 
+    estimation_input = estimation.EstimationInput(observations_set, inv_cov, convergence_check)
+
     # define weighting of the observations in the inversion
     noise_level = 5.0 / constants.SPEED_OF_LIGHT
     weights_per_observable = \
-        {estimation_setup.observation.one_way_doppler_type: noise_level ** -2}
+        {estimation_setup.observation.one_way_instantaneous_doppler_type: noise_level ** -2}
     pod_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform estimation_functions and return pod_output
-    return estimator.perform_estimation(pod_input, convergence_check)
+    return estimator.perform_estimation(estimation_input)
 
 
 # Function creating a dummy estimator (for 1st part of the tutorial when observations have to be simulated but no estimation_functions

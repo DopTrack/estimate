@@ -88,7 +88,8 @@ def propagate_initial_state(initial_state, initial_time, final_time, bodies, acc
     single_arc_propagator_settings = create_propagator_settings(initial_state, initial_time, final_time, accelerations)
 
     # Propagate dynamics
-    simulator = numerical_simulation.create_dynamics_simulator(bodies, single_arc_propagator_settings, 1)
+    simulator = numerical_simulation.SingleArcSimulator(bodies, integrator_settings, single_arc_propagator_settings, 1, 0, 1)
+    # simulator = numerical_simulation.create_dynamics_simulator(bodies, single_arc_propagator_settings, 1)
 
     cartesian_states = result2array(simulator.state_history)
     dependent_variables = result2array(simulator.dependent_variable_history)
@@ -107,7 +108,7 @@ def get_initial_states(bodies, arc_start_times):
     return arc_initial_states
 
 
-def define_multi_arc_propagation_settings(arc_wise_initial_states, arc_end_times, bodies, accelerations):
+def define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations):
 
     bodies_to_propagate = ["Delfi"]
     central_bodies = ["Earth"]
@@ -117,12 +118,16 @@ def define_multi_arc_propagation_settings(arc_wise_initial_states, arc_end_times
     # concatenated_initial_states = np.zeros(6 * nb_arcs)
     for i in range(nb_arcs):
         arc_initial_state = arc_wise_initial_states[i]
+        arc_initial_time = arc_start_times[i]
         # bodies.get("Delfi").ephemeris.cartesian_state(arc_start_times[i]) \
         #                     - bodies.get("Earth").ephemeris.cartesian_state(arc_start_times[i])
         # concatenated_initial_states[i * 6:(i + 1) * 6] = arc_initial_state
+
+        integrator_settings = create_integrator_settings(arc_initial_time)
+
         arc_termination_condition = propagation_setup.propagator.time_termination(arc_end_times[i])
         propagator_settings_list.append(propagation_setup.propagator.translational(
-            central_bodies, accelerations, bodies_to_propagate, arc_initial_state, arc_termination_condition))
+            central_bodies, accelerations, bodies_to_propagate, arc_initial_state, arc_initial_time, integrator_settings, arc_termination_condition))
 
     multi_arc_propagator_settings = propagation_setup.propagator.multi_arc(propagator_settings_list)
 

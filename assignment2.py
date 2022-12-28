@@ -97,7 +97,7 @@ bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_d
 accelerations = create_accelerations(acceleration_models, bodies)
 
 # Define multi-arc propagator settings
-multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_end_times, bodies, accelerations)
+multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations)
 
 # Create the DopTrack station
 define_doptrack_station(bodies)
@@ -143,7 +143,7 @@ parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_pr
 estimation_setup.print_parameter_names(parameters_to_estimate)
 
 # Create the estimator object
-estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, integrator_settings, multi_arc_propagator_settings)
+estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
 
 # Simulate (ideal) observations
 ideal_observations = simulate_observations_from_estimator(observation_times, estimator, bodies)
@@ -160,7 +160,7 @@ pod_output = run_estimation(estimator, parameters_to_estimate, observations_set,
 
 print(pod_output.formal_errors)
 
-residuals = pod_output.residual_history
+residuals = pod_output.residual_history / constants.SPEED_OF_LIGHT
 mean_residuals = statistics.mean(residuals[:,nb_iterations-1])
 std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
 
