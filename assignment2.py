@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 from propagation_functions.environment import *
 from propagation_functions.propagation import *
-from estimation_functions.estimation import define_doptrack_station, define_parameters, define_observation_settings, simulate_ideal_observations, \
+from estimation_functions.estimation import define_doptrack_station, define_parameters, define_observation_settings, simulate_observations_from_estimator, \
     run_estimation
 from estimation_functions.observations_data import load_and_format_observations
 
@@ -34,9 +34,8 @@ data = ['Delfi-C3_32789_202004011219.DOP1C'] #['Delfi-C3_32789_202004011044.DOP1
 
 
 # Retrieve initial epoch and state of the first pass
-julian_date, initial_state_teme = get_tle_initial_conditions(metadata_folder + metadata[0])
-initial_epoch = (julian_date - j2000_days) * 86400.0
-start_recording_day = get_start_next_day(initial_epoch, j2000_days)
+initial_epoch, initial_state_teme = get_tle_initial_conditions(metadata_folder + metadata[0])
+start_recording_day = get_start_next_day(initial_epoch)
 
 # Calculate final propagation_functions epoch
 nb_days_to_propagate = 8
@@ -62,7 +61,7 @@ mass_delfi = 2.2
 reference_area_delfi = 0.035
 drag_coefficient_delfi = 1.4
 srp_coefficient_delfi = 2.4
-bodies = define_system_bodies(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
+bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
 
 # Set Delfi's initial state of Delfi
 initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
@@ -94,7 +93,7 @@ arc_wise_initial_states = get_initial_states(bodies, arc_start_times)
 
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
-bodies = define_system_bodies(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, True)
+bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, True)
 accelerations = create_accelerations(acceleration_models, bodies)
 
 # Define multi-arc propagator settings
@@ -147,7 +146,7 @@ estimation_setup.print_parameter_names(parameters_to_estimate)
 estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, integrator_settings, multi_arc_propagator_settings)
 
 # Simulate (ideal) observations
-ideal_observations = simulate_ideal_observations(observation_times, estimator, bodies)
+ideal_observations = simulate_observations_from_estimator(observation_times, estimator, bodies)
 
 
 # Save the true parameters to later analyse the error

@@ -64,8 +64,15 @@ def create_propagator_settings(initial_state, final_time, accelerations):
     # Create termination settings
     termination_condition = propagation_setup.propagator.time_termination(final_time)
 
+    # Define dependent variables
+    dependent_variables = [
+        propagation_setup.dependent_variable.keplerian_state("Delfi", "Earth"),
+        propagation_setup.dependent_variable.latitude("Delfi", "Earth"),
+        propagation_setup.dependent_variable.longitude("Delfi", "Earth")
+    ]
+
     return propagation_setup.propagator.translational(
-        central_bodies, accelerations, bodies_to_propagate, initial_state, termination_condition)
+        central_bodies, accelerations, bodies_to_propagate, initial_state, termination_condition, output_variables=dependent_variables)
 
 
 def propagate_initial_state(initial_state, initial_time, final_time, bodies, accelerations):
@@ -77,10 +84,15 @@ def propagate_initial_state(initial_state, initial_time, final_time, bodies, acc
     single_arc_propagator_settings = create_propagator_settings(initial_state, final_time, accelerations)
 
     # Propagate dynamics
-    simulator = numerical_simulation.SingleArcSimulator(bodies, integrator_settings,
-                                            single_arc_propagator_settings, 1, 0, 1)
+    simulator = numerical_simulation.SingleArcSimulator(bodies, integrator_settings, single_arc_propagator_settings, 1, 0, 1)
 
-    return result2array(simulator.state_history)
+    cartesian_states = result2array(simulator.state_history)
+    dependent_variables = result2array(simulator.dependent_variable_history)
+    keplerian_states = dependent_variables[:, 0:7]
+    latitudes = dependent_variables[:, [0, 7]]
+    longitudes = dependent_variables[:, [0, 8]]
+
+    return cartesian_states, keplerian_states, latitudes, longitudes
 
 
 def get_initial_states(bodies, arc_start_times):

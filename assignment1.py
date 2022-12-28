@@ -76,13 +76,15 @@ accelerations = create_accelerations(acceleration_models, bodies)
 propagator_settings = create_propagator_settings(initial_state, final_epoch, accelerations)
 
 # Propagate dynamics of the Delfi satellite from initial_epoch to final_epoch, starting from initial_state
-propagated_orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
+# The propagation output is given in cartesian and keplerian states, and the latitude/longitude of the spacecraft are also saved.
+cartesian_states, keplerian_states, latitudes, longitudes =\
+    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
 
 # Plot propagated orbit
 fig = plt.figure(figsize=(6,6), dpi=125)
 ax = fig.add_subplot(111, projection='3d')
 ax.set_title(f'Delfi-C3 trajectory around Earth')
-ax.plot(propagated_orbit[:, 1], propagated_orbit[:, 2], propagated_orbit[:, 3], label='Delfi-C3', linestyle='-.')
+ax.plot(cartesian_states[:, 1], cartesian_states[:, 2], cartesian_states[:, 3], label='Delfi-C3', linestyle='-.')
 ax.scatter(0.0, 0.0, 0.0, label="Earth", marker='o', color='blue')
 ax.legend()
 ax.set_xlabel('x [m]')
@@ -110,7 +112,7 @@ while current_time < final_epoch:
     current_time = current_time + obs_time_step
 
 # Simulate (ideal) observations
-simulated_observations = simulate_ideal_observations(possible_obs_times, observation_settings, propagator_settings, bodies, initial_epoch, 5)
+simulated_observations = simulate_observations(possible_obs_times, observation_settings, propagator_settings, bodies, initial_epoch, 5)
 
 simulated_obs_times = np.array(simulated_observations.concatenated_times)
 simulated_doppler = simulated_observations.concatenated_observations

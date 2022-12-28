@@ -243,7 +243,7 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
     return parameters_to_estimate
 
 
-def simulate_ideal_observations(observation_times, observation_settings, propagator_settings, bodies, initial_time, min_elevation_angle: float = 10):
+def simulate_observations(observation_times, observation_settings, propagator_settings, bodies, initial_time, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
     link_ends_per_obs[observation.one_way_doppler_type] = [define_link_ends()]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
@@ -253,6 +253,18 @@ def simulate_ideal_observations(observation_times, observation_settings, propaga
     # Therefore, the observations cannot be simulated before the creation of an Estimator object.
     integrator_settings = create_integrator_settings(initial_time)
     estimator = create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings)
+
+    elevation_condition = observation.elevation_angle_viability(define_link_ends()[observation.receiver], np.deg2rad(min_elevation_angle))
+    observation.add_viability_check_to_settings(observation_simulation_settings, [elevation_condition])
+
+    return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
+
+
+def simulate_observations_from_estimator(observation_times, estimator, bodies, min_elevation_angle: float = 10):
+    link_ends_per_obs = dict()
+    link_ends_per_obs[observation.one_way_doppler_type] = [define_link_ends()]
+    observation_simulation_settings = observation.tabulated_simulation_settings_list(
+        link_ends_per_obs, observation_times, observation.receiver)
 
     elevation_condition = observation.elevation_angle_viability(define_link_ends()[observation.receiver], np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_settings(observation_simulation_settings, [elevation_condition])
