@@ -1,5 +1,6 @@
 # Load standard modules
 from matplotlib import pyplot as plt
+from sklearn.linear_model import LinearRegression # linear regression module
 
 from propagation_functions.environment import *
 from propagation_functions.propagation import *
@@ -89,17 +90,17 @@ propagator_settings = create_propagator_settings(initial_state, initial_epoch, f
 cartesian_states, keplerian_states, latitudes, longitudes =\
     propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
 
-# Plot propagated orbit
-fig = plt.figure(figsize=(6,6), dpi=125)
-ax = fig.add_subplot(111, projection='3d')
-ax.set_title(f'Delfi-C3 trajectory around Earth')
-ax.plot(cartesian_states[:, 1], cartesian_states[:, 2], cartesian_states[:, 3], label='Delfi-C3', linestyle='-.')
-ax.scatter(0.0, 0.0, 0.0, label="Earth", marker='o', color='blue')
-ax.legend()
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-ax.set_zlabel('z [m]')
-plt.show()
+# # Plot propagated orbit
+# fig = plt.figure(figsize=(6,6), dpi=125)
+# ax = fig.add_subplot(111, projection='3d')
+# ax.set_title(f'Delfi-C3 trajectory around Earth')
+# ax.plot(cartesian_states[:, 1], cartesian_states[:, 2], cartesian_states[:, 3], label='Delfi-C3', linestyle='-.')
+# ax.scatter(0.0, 0.0, 0.0, label="Earth", marker='o', color='blue')
+# ax.legend()
+# ax.set_xlabel('x [m]')
+# ax.set_ylabel('y [m]')
+# ax.set_zlabel('z [m]')
+# plt.show()
 
 
 # --------------------------------------
@@ -121,22 +122,22 @@ while current_time < final_epoch:
     current_time = current_time + obs_time_step
 
 # Simulate (ideal) observations
-simulated_observations = simulate_observations(possible_obs_times, observation_settings, propagator_settings, bodies, initial_epoch, 5)
+simulated_observations = simulate_observations(possible_obs_times, observation_settings, propagator_settings, bodies, initial_epoch, 0)
 
 simulated_obs_times = np.array(simulated_observations.concatenated_times)
 simulated_doppler = simulated_observations.concatenated_observations
 
 
-# Plot simulated Doppler data
-fig = plt.figure(figsize=(6,6), dpi=125)
-ax = fig.add_subplot()
-ax.set_title(f'Doppler')
-ax.plot((simulated_obs_times - start_recording_day)/3600, simulated_doppler, label='simulated', color='red', linestyle='none', marker='.')
-ax.legend()
-ax.set_xlabel('Time [hours since start of day]')
-ax.set_ylabel('Doppler [m/s]')
-plt.grid()
-plt.show()
+# # Plot simulated Doppler data
+# fig = plt.figure(figsize=(6,6), dpi=125)
+# ax = fig.add_subplot()
+# ax.set_title(f'Doppler')
+# ax.plot((simulated_obs_times - start_recording_day)/3600, simulated_doppler, label='simulated', color='red', linestyle='none', marker='.')
+# ax.legend()
+# ax.set_xlabel('Time [hours since start of day]')
+# ax.set_ylabel('Doppler [m/s]')
+# plt.grid()
+# plt.show()
 
 
 # --------------------------------------
@@ -148,7 +149,7 @@ data = ['Delfi-C3_32789_202004020904.DOP1C', 'Delfi-C3_32789_202004021953.DOP1C'
 
 # Process observations.
 # This loads the recorded observations and retrieve the start of each tracking pass
-passes_start_times, observation_times, observations_set = load_and_format_observations(data_folder, data)
+passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data)
 
 # Retrieve measured Doppler values
 real_doppler = observations_set.concatenated_observations
@@ -168,6 +169,71 @@ plt.show()
 
 
 # --------------------------------------
-# 4/ Compare simulated and recorded pass
+# 4/ Compare simulated and recorded data for single pass
 # --------------------------------------
+
+# Index of the *recorded* pass of interest (warning: the number of recorded passes might differ from the number of simulated passes)
+index_pass = 0
+single_pass_start_time = passes_start_times[index_pass]
+single_pass_end_time = passes_end_times[index_pass]
+
+# Retrieve recorded Doppler data for single pass
+real_obs_single_pass = get_observations_single_pass(single_pass_start_time, single_pass_end_time, observations_set)
+
+# Retrieve simulated Doppler data for single pass
+simulated_obs_single_pass = get_observations_single_pass(single_pass_start_time, single_pass_end_time, simulated_observations)
+
+# Interpolate simulated and recorded observations to identical times
+interpolated_simulated_obs, interpolated_real_obs = interpolate_obs(simulated_obs_single_pass, real_obs_single_pass)
+interpolated_times = interpolated_simulated_obs[:,0]
+
+# Compute first residual between recorded and simulated observations
+first_residual_obs = interpolated_real_obs[:,1] - interpolated_simulated_obs[:,1]
+
+# Perform linear regression on first residual
+linear_fit = LinearRegression().fit(interpolated_times.reshape((-1, 1)), first_residual_obs)
+
+# Retrieve fit model
+fit = linear_fit.predict(np.linspace(interpolated_times[0], interpolated_times[len(interpolated_times)-1]).reshape((-1, 1)))
+
+# Compute second residual after removing linear fit
+second_residual_obs = first_residual_obs - linear_fit.predict(interpolated_times.reshape((-1, 1)))
+
+
+
+# Plot single pass observations (both recorded and simulated, as well as first and second residuals)
+
+fig = plt.figure()
+fig.tight_layout()
+fig.subplots_adjust(hspace=0.3)
+
+ax1 = fig.add_subplot(2,2,1)
+ax3 = fig.add_subplot(2,2,3)
+ax4 = fig.add_subplot(2,2,4)
+
+ax1.plot((interpolated_times - start_recording_day)/3600, interpolated_real_obs[:,1], label='recorded', color='blue', linestyle='none', marker='.')
+ax1.plot((interpolated_times - start_recording_day)/3600, interpolated_simulated_obs[:,1], label='simulated', color='red', linestyle='none', marker='.')
+ax1.grid()
+ax1.set_title(f'Doppler')
+ax1.legend()
+ax1.set_xlabel('Time [hours since start of day]')
+ax1.set_ylabel('Doppler [m/s]')
+
+ax3.plot((interpolated_times - start_recording_day)/3600, first_residual_obs, label='residual', color='green', linestyle='none', marker='.')
+ax3.plot((np.linspace(interpolated_times[0], interpolated_times[len(interpolated_times)-1]) - start_recording_day)/3600, fit, label='linear fit', color='black', linestyle='-')
+ax3.grid()
+ax3.set_title(f'First residual (recorded - simulated)')
+ax3.legend()
+ax3.set_xlabel('Time [hours since start of day]')
+ax3.set_ylabel('Residual [m/s]')
+
+ax4.plot((interpolated_times - start_recording_day)/3600, second_residual_obs, label='residual', color='green', linestyle='none', marker='.')
+ax4.grid()
+ax4.set_title(f'Second residual (first residual - linear fit)')
+ax4.legend()
+ax4.set_xlabel('Time [hours since start of day]')
+ax4.set_ylabel('Residual [m/s]')
+
+plt.show()
+
 

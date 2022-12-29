@@ -296,18 +296,15 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
             inv_cov[i*6+3+j, i*6+3+j] = 1.0 / (apriori_covariance_velocity * apriori_covariance_velocity)
 
     # Create input object for estimation_functions, adding observations and parameter set information
-    pod_input = estimation.PodInput(observations_set, inverse_apriori_covariance=inv_cov)
-    pod_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
-
     convergence_check = estimation.estimation_convergence_checker(nb_iterations)
-
     estimation_input = estimation.EstimationInput(observations_set, inv_cov, convergence_check)
+    estimation_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
 
-    # define weighting of the observations in the inversion
-    noise_level = 5.0 / constants.SPEED_OF_LIGHT
+    # Define observations weights
+    noise_level = 5.0
     weights_per_observable = \
         {estimation_setup.observation.one_way_instantaneous_doppler_type: noise_level ** -2}
-    pod_input.set_constant_weight_per_observable(weights_per_observable)
+    estimation_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform estimation_functions and return pod_output
     return estimator.perform_estimation(estimation_input)
