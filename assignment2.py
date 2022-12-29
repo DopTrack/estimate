@@ -160,12 +160,12 @@ pod_output = run_estimation(estimator, parameters_to_estimate, observations_set,
 
 print(pod_output.formal_errors)
 
-residuals = pod_output.residual_history / constants.SPEED_OF_LIGHT
+residuals = pod_output.residual_history
 mean_residuals = statistics.mean(residuals[:,nb_iterations-1])
 std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
 
-print('mean', mean_residuals*constants.SPEED_OF_LIGHT)
-print('standard deviation', std_residuals*constants.SPEED_OF_LIGHT)
+print('mean', mean_residuals)
+print('standard deviation', std_residuals)
 
 
 
@@ -174,10 +174,10 @@ fig = plt.figure(figsize=(6,6), dpi=125)
 ax = fig.add_subplot()
 ax.set_title(f'Residuals')
 
-# ax.plot(residuals[:,0]*constants.SPEED_OF_LIGHT, color='red', linestyle='-.')
-# ax.plot(residuals[:,1]*constants.SPEED_OF_LIGHT, color='green', linestyle='-.')
-# ax.plot(residuals[:,2]*constants.SPEED_OF_LIGHT, color='green', linestyle='-.')
-ax.plot(residuals[:,nb_iterations-1]*constants.SPEED_OF_LIGHT,color='blue', linestyle='-.')
+# ax.plot(residuals[:,0], color='red', linestyle='-.')
+# ax.plot(residuals[:,1], color='green', linestyle='-.')
+# ax.plot(residuals[:,2], color='green', linestyle='-.')
+ax.plot(residuals[:,nb_iterations-1],color='blue', linestyle='-.')
 
 # ax.legend()
 ax.set_xlabel('Time [s]')
@@ -188,8 +188,8 @@ plt.show()
 # Plot residuals histogram
 fig = plt.figure()
 ax = fig.add_subplot()
-plt.hist(residuals[:,1]*constants.SPEED_OF_LIGHT,100)
-plt.hist(residuals[:,nb_iterations-1]*constants.SPEED_OF_LIGHT,100)
+plt.hist(residuals[:,1],100)
+plt.hist(residuals[:,nb_iterations-1],100)
 ax.set_xlabel('Doppler residuals [m/s]')
 ax.set_ylabel('Nb occurrences []')
 plt.grid()

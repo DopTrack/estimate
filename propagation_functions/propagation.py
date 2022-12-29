@@ -20,34 +20,40 @@ def create_accelerations(acceleration_models, bodies):
 
     # Define the accelerations acting on Delfi
     accelerations_due_to_sun = []
-    if acceleration_models['Sun']["point_mass_gravity"]:
-        accelerations_due_to_sun.append(propagation_setup.acceleration.point_mass_gravity())
-    if acceleration_models['Sun']["solar_radiation_pressure"]:
-        accelerations_due_to_sun.append(propagation_setup.acceleration.cannonball_radiation_pressure())
+    if "Sun" in acceleration_models:
+        if acceleration_models['Sun']["point_mass_gravity"]:
+            accelerations_due_to_sun.append(propagation_setup.acceleration.point_mass_gravity())
+        if acceleration_models['Sun']["solar_radiation_pressure"]:
+            accelerations_due_to_sun.append(propagation_setup.acceleration.cannonball_radiation_pressure())
 
     accelerations_due_to_moon = []
-    if acceleration_models['Moon']["point_mass_gravity"]:
-        accelerations_due_to_moon.append(propagation_setup.acceleration.point_mass_gravity())
+    if "Moon" in acceleration_models:
+        if acceleration_models['Moon']["point_mass_gravity"]:
+            accelerations_due_to_moon.append(propagation_setup.acceleration.point_mass_gravity())
 
     accelerations_due_to_earth = []
-    if acceleration_models['Earth']["point_mass_gravity"]:
-        accelerations_due_to_earth.append(propagation_setup.acceleration.point_mass_gravity())
-    if acceleration_models['Earth']["spherical_harmonic_gravity"]:
-        accelerations_due_to_earth.append(propagation_setup.acceleration.spherical_harmonic_gravity(12, 12))
-    if acceleration_models['Earth']["drag"]:
-        accelerations_due_to_earth.append(propagation_setup.acceleration.aerodynamic())
+    if "Earth" in acceleration_models:
+        if acceleration_models['Earth']["point_mass_gravity"]:
+            accelerations_due_to_earth.append(propagation_setup.acceleration.point_mass_gravity())
+        if acceleration_models['Earth']["spherical_harmonic_gravity"]:
+            accelerations_due_to_earth.append(propagation_setup.acceleration.spherical_harmonic_gravity(12, 12))
+        if acceleration_models['Earth']["drag"]:
+            accelerations_due_to_earth.append(propagation_setup.acceleration.aerodynamic())
 
     accelerations_due_to_venus = []
-    if acceleration_models['Venus']["point_mass_gravity"]:
-        accelerations_due_to_venus.append(propagation_setup.acceleration.point_mass_gravity())
+    if "Venus" in acceleration_models:
+        if acceleration_models['Venus']["point_mass_gravity"]:
+            accelerations_due_to_venus.append(propagation_setup.acceleration.point_mass_gravity())
 
     accelerations_due_to_mars = []
-    if acceleration_models['Mars']["point_mass_gravity"]:
-        accelerations_due_to_mars.append(propagation_setup.acceleration.point_mass_gravity())
+    if "Mars" in acceleration_models:
+        if acceleration_models['Mars']["point_mass_gravity"]:
+            accelerations_due_to_mars.append(propagation_setup.acceleration.point_mass_gravity())
 
     accelerations_due_to_jupiter = []
-    if acceleration_models['Jupiter']["point_mass_gravity"]:
-        accelerations_due_to_jupiter.append(propagation_setup.acceleration.point_mass_gravity())
+    if "Jupiter" in acceleration_models:
+        if acceleration_models['Jupiter']["point_mass_gravity"]:
+            accelerations_due_to_jupiter.append(propagation_setup.acceleration.point_mass_gravity())
 
     accelerations_settings_delfi = dict(
         Sun=accelerations_due_to_sun,
