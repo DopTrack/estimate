@@ -21,14 +21,19 @@ conda install -c tudat-team/label/dev tudatpy
 
 Then get the DopTrack software package:
 ```
-git clone https://github.com/DopTrack/DopTrack.git
+git clone git@github.com:DopTrack/Process.git
 ```
 
 and install it inside the newly created environment:
 
 ```
-pip install .
-pip install -e DopTrack
+cd Process
+pip install -e .
+```
+
+Go back to main folder
+```
+cd ..
 ```
 
 Download code
@@ -36,7 +41,7 @@ Download code
 
 Then get estimate repository:
 ```
-git clone https://github.com/DopTrack/DopTrack.git
+git clone git@github.com:DopTrack/estimate.git
 ```
 
 Before running anything, make sure to extract the contents of the compressed folders data.tar.xz and metadata.tar.xz on which the current scripts rely.
