@@ -6,9 +6,8 @@ from matplotlib import pyplot as plt
 
 from propagation_functions.environment import *
 from propagation_functions.propagation import *
-from estimation_functions.estimation import define_doptrack_station, define_parameters, define_observation_settings, simulate_observations_from_estimator, \
-    run_estimation
-from estimation_functions.observations_data import load_and_format_observations
+from estimation_functions.estimation import *
+from estimation_functions.observations_data import *
 
 from utility_functions.time import *
 from utility_functions.tle import *
@@ -28,9 +27,21 @@ metadata_folder = 'metadata/'
 data_folder = 'data/'
 
 # Files to be uploaded
-metadata = ['Delfi-C3_32789_202004011219.yml'] #['Delfi-C3_32789_202004011044.yml']
+metadata = ['Delfi-C3_32789_202004011044.yml', 'Delfi-C3_32789_202004011219.yml', 'Delfi-C3_32789_202004020904.yml', 'Delfi-C3_32789_202004021953.yml',
+            'Delfi-C3_32789_202004031031.yml', 'Delfi-C3_32789_202004031947.yml', 'Delfi-C3_32789_202004041200.yml', 'Delfi-C3_32789_202004061012.yml',
+            'Delfi-C3_32789_202004062101.yml', 'Delfi-C3_32789_202004062236.yml', 'Delfi-C3_32789_202004072055.yml', 'Delfi-C3_32789_202004072230.yml',
+            'Delfi-C3_32789_202004081135.yml']
 
-data = ['Delfi-C3_32789_202004011219.DOP1C'] #['Delfi-C3_32789_202004011044.DOP1C']
+data = ['Delfi-C3_32789_202004011044.DOP1C', 'Delfi-C3_32789_202004011219.DOP1C', 'Delfi-C3_32789_202004020904.DOP1C', 'Delfi-C3_32789_202004021953.DOP1C',
+        'Delfi-C3_32789_202004031031.DOP1C', 'Delfi-C3_32789_202004031947.DOP1C', 'Delfi-C3_32789_202004041200.DOP1C', 'Delfi-C3_32789_202004061012.DOP1C',
+        'Delfi-C3_32789_202004062101.DOP1C', 'Delfi-C3_32789_202004062236.DOP1C', 'Delfi-C3_32789_202004072055.DOP1C', 'Delfi-C3_32789_202004072230.DOP1C',
+        'Delfi-C3_32789_202004081135.DOP1C']
+
+# Specify which metadata and data files should be loaded (this will change throughout the assignment)
+# 1. & 2. only one pass
+# 3. & 4. all passes
+indices_files_to_load = [0, 1]
+# indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 
 # Retrieve initial epoch and state of the first pass
@@ -38,36 +49,34 @@ initial_epoch, initial_state_teme = get_tle_initial_conditions(metadata_folder +
 start_recording_day = get_start_next_day(initial_epoch)
 
 # Calculate final propagation_functions epoch
-nb_days_to_propagate = 8
+nb_days_to_propagate = 9
 final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
 
 print('initial_epoch', initial_epoch)
 print('final_epoch', final_epoch)
 
 # Load and process observations
-passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data)
-print('passes_start_times', passes_start_times)
+passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, indices_files_to_load)
 
 
-# Define day-long arcs and retrieve the corresponding arc starting times
-arc_start_times = get_days_starting_times(passes_start_times)
-arc_end_times = get_days_end_times(arc_start_times)
+# Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
+# Three options: one arc per pass ('per_pass'), one arc per day ('per_day') and one arc per week ('per_week')
+arc_start_times, arc_end_times = define_arcs('per_week', passes_start_times, passes_end_times)
 
-# Load spice kernels
-spice.load_standard_kernels()
+print('arc_start_times', arc_start_times)
+print('arc_end_times', arc_end_times)
+
 
 # Define propagation_functions environment
 mass_delfi = 2.2
 reference_area_delfi = 0.035
 drag_coefficient_delfi = 1.4
 srp_coefficient_delfi = 2.4
-bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
+bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=False)
 
 # Set Delfi's initial state of Delfi
 initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
 
-# Create numerical integrator settings
-integrator_settings = propagation_setup.integrator.runge_kutta_4(initial_epoch, 10.0)
 
 # Define accelerations exerted on Delfi
 # Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
@@ -83,6 +92,15 @@ acceleration_models = dict(
         'point_mass_gravity': False,
         'spherical_harmonic_gravity': True,
         'drag': True
+    },
+    Venus={
+        'point_mass_gravity': True
+    },
+    Mars={
+        'point_mass_gravity': True
+    },
+    Jupiter={
+        'point_mass_gravity': True
     }
 )
 accelerations = create_accelerations(acceleration_models, bodies)
@@ -93,7 +111,7 @@ arc_wise_initial_states = get_initial_states(bodies, arc_start_times)
 
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
-bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, True)
+bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=True)
 accelerations = create_accelerations(acceleration_models, bodies)
 
 # Define multi-arc propagator settings
@@ -104,38 +122,43 @@ define_doptrack_station(bodies)
 
 
 # Define default observation settings
+# Specify on which time interval the observation bias(es) should be defined. This will change throughout the assignment (can be 'per_pass', 'per_arc', 'global')
+# Noting that the arc duration can vary (see arc definition line 64)
+bias_definition = 'per_pass'
 Doppler_models = dict(
     absolute_bias={
         'activated': True,
-        'times': passes_start_times
+        'time_interval': bias_definition
     },
     relative_bias={
         'activated': True,
-        'times': passes_start_times
+        'time_interval': bias_definition
     },
     time_bias={
         'activated': True,
-        'times': passes_start_times
+        'time_interval': bias_definition
     }
 )
-observation_settings = define_observation_settings(Doppler_models)
+observation_settings = define_observation_settings(Doppler_models, passes_start_times, arc_start_times)
 
 # Define parameters to estimate
 parameters_list = dict(
     initial_state_delfi={
         'estimate': True,
-        'type': 'per_arc' # can only be per arc
+        'type': 'per_arc' # Do not modify this entry. To modify the frequency at which Delfi's initial state is estimated,
+                          # the tracking arc duration should be directly modified (go to line 64 and change the arc definition)
     },
     absolute_bias={
         'estimate': True,
-        'type': 'per_pass'
+        'type': bias_definition # Do not modify this entry, it should be consistent with the bias definition above
     },
     relative_bias={
         'estimate': True,
-        'type': 'per_pass'},
+        'type': bias_definition # Idem
+    },
     time_bias={
         'estimate': True,
-        'type': 'per_pass'
+        'type': bias_definition # Idem
     }
 )
 parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
@@ -145,6 +168,7 @@ estimation_setup.print_parameter_names(parameters_to_estimate)
 # Create the estimator object
 estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
 
+print('max observation_times', max(observation_times))
 # Simulate (ideal) observations
 ideal_observations = simulate_observations_from_estimator(observation_times, estimator, bodies)
 
@@ -188,11 +212,9 @@ plt.show()
 # Plot residuals histogram
 fig = plt.figure()
 ax = fig.add_subplot()
-plt.hist(residuals[:,1],100)
+# plt.hist(residuals[:,1],100)
 plt.hist(residuals[:,nb_iterations-1],100)
 ax.set_xlabel('Doppler residuals [m/s]')
 ax.set_ylabel('Nb occurrences []')
 plt.grid()
 plt.show()
-
-
