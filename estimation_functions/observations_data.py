@@ -1,5 +1,6 @@
 # Load standard modules
 import numpy as np
+from scipy.interpolate import interp1d # interpolation function
 
 from estimation_functions.estimation import define_link_ends
 from utility_functions.time import jday
@@ -52,6 +53,7 @@ def process_observations(filename: str, fraction_discarded: float = 0.1) -> np.a
 def load_and_format_observations(data_folder, data, index_files=[]):
 
     passes_start_times = []
+    passes_end_times = []
 
     if len(index_files) == 0:
         for i in range(len(data)):
@@ -59,9 +61,11 @@ def load_and_format_observations(data_folder, data, index_files=[]):
 
     existing_data = process_observations(data_folder + data[index_files[0]])
     passes_start_times.append(existing_data[0, 0] - 10.0)
+    passes_end_times.append(existing_data[np.shape(existing_data)[0]-1, 0]+10.0)
     for i in range(1, len(index_files)):
         data_set = process_observations(data_folder + data[index_files[i]])
         passes_start_times.append(data_set[0, 0] - 10.0)
+        passes_end_times.append(data_set[np.shape(data_set)[0]-1, 0] + 10.0)
         existing_data = np.concatenate((existing_data, data_set))
     obs_times = existing_data[:, 0].tolist()
     obs_values = []
@@ -81,8 +85,52 @@ def load_and_format_observations(data_folder, data, index_files=[]):
 
     observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
 
-    return passes_start_times, obs_times, observations_set
+    return passes_start_times, passes_end_times, obs_times, observations_set
 
 
 def convert_frequencies_to_range_rate(frequencies):
     return frequencies #* constants.SPEED_OF_LIGHT
+
+
+def get_observations_single_pass(single_pass_start_time, single_pass_end_time, observations_set):
+
+    observations = observations_set.concatenated_observations
+    times = observations_set.concatenated_times
+
+    selected_obs = []
+    selected_times = []
+
+    for i in range(len(observations)):
+        if single_pass_start_time <= times[i] <= single_pass_end_time:
+            selected_obs.append(observations[i])
+            selected_times.append(times[i])
+
+    obs_array = np.zeros((len(selected_obs), 2))
+    for i in range(len(selected_obs)):
+        obs_array[i, 0] = selected_times[i]
+        obs_array[i, 1] = selected_obs[i]
+
+    return obs_array
+
+
+def interpolate_obs(simulated_obs, real_obs):
+    interpolation_function = interp1d(simulated_obs[:, 0], simulated_obs[:, 1], kind='cubic')
+    min_time_simulated = min(simulated_obs[:, 0])
+    max_time_simulated = max(simulated_obs[:, 0])
+
+    interpolated_real_obs = []
+
+    obs_times_comparison = []
+    for i in range(len(real_obs[:, 0])):
+        if min_time_simulated < real_obs[i, 0] < max_time_simulated:
+            obs_times_comparison.append(real_obs[i, 0])
+            interpolated_real_obs.append([real_obs[i, 0], real_obs[i,1]])
+
+    interpolated_real_obs = np.array(interpolated_real_obs)
+
+    interpolated_simulated_obs = np.zeros(np.shape(interpolated_real_obs))
+    interpolated_simulated_obs[:,0] = interpolated_real_obs[:,0]
+    interpolated_simulated_obs[:,1] = interpolation_function(interpolated_real_obs[:,0])
+
+    return interpolated_simulated_obs, interpolated_real_obs
+

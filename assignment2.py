@@ -45,7 +45,7 @@ print('initial_epoch', initial_epoch)
 print('final_epoch', final_epoch)
 
 # Load and process observations
-passes_start_times, observation_times, observations_set = load_and_format_observations(data_folder, data)
+passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data)
 print('passes_start_times', passes_start_times)
 
 
