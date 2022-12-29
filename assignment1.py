@@ -52,9 +52,6 @@ bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_d
 # Set Delfi's initial state to the TLE prediction
 initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
 
-# # Create numerical integrator settings
-# integrator_settings = propagation_setup.integrator.runge_kutta_4(initial_epoch, 10.0)
-
 # Define accelerations exerted on Delfi
 # The following can be modified. Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
 acceleration_models = dict(
@@ -90,17 +87,17 @@ propagator_settings = create_propagator_settings(initial_state, initial_epoch, f
 cartesian_states, keplerian_states, latitudes, longitudes =\
     propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
 
-# # Plot propagated orbit
-# fig = plt.figure(figsize=(6,6), dpi=125)
-# ax = fig.add_subplot(111, projection='3d')
-# ax.set_title(f'Delfi-C3 trajectory around Earth')
-# ax.plot(cartesian_states[:, 1], cartesian_states[:, 2], cartesian_states[:, 3], label='Delfi-C3', linestyle='-.')
-# ax.scatter(0.0, 0.0, 0.0, label="Earth", marker='o', color='blue')
-# ax.legend()
-# ax.set_xlabel('x [m]')
-# ax.set_ylabel('y [m]')
-# ax.set_zlabel('z [m]')
-# plt.show()
+# Plot propagated orbit
+fig = plt.figure(figsize=(6,6), dpi=125)
+ax = fig.add_subplot(111, projection='3d')
+ax.set_title(f'Delfi-C3 trajectory around Earth')
+ax.plot(cartesian_states[:, 1], cartesian_states[:, 2], cartesian_states[:, 3], label='Delfi-C3', linestyle='-.')
+ax.scatter(0.0, 0.0, 0.0, label="Earth", marker='o', color='blue')
+ax.legend()
+ax.set_xlabel('x [m]')
+ax.set_ylabel('y [m]')
+ax.set_zlabel('z [m]')
+plt.show()
 
 
 # --------------------------------------
@@ -128,16 +125,16 @@ simulated_obs_times = np.array(simulated_observations.concatenated_times)
 simulated_doppler = simulated_observations.concatenated_observations
 
 
-# # Plot simulated Doppler data
-# fig = plt.figure(figsize=(6,6), dpi=125)
-# ax = fig.add_subplot()
-# ax.set_title(f'Doppler')
-# ax.plot((simulated_obs_times - start_recording_day)/3600, simulated_doppler, label='simulated', color='red', linestyle='none', marker='.')
-# ax.legend()
-# ax.set_xlabel('Time [hours since start of day]')
-# ax.set_ylabel('Doppler [m/s]')
-# plt.grid()
-# plt.show()
+# Plot simulated Doppler data
+fig = plt.figure(figsize=(6,6), dpi=125)
+ax = fig.add_subplot()
+ax.set_title(f'Doppler')
+ax.plot((simulated_obs_times - start_recording_day)/3600, simulated_doppler, label='simulated', color='red', linestyle='none', marker='.')
+ax.legend()
+ax.set_xlabel('Time [hours since start of day]')
+ax.set_ylabel('Doppler [m/s]')
+plt.grid()
+plt.show()
 
 
 # --------------------------------------
