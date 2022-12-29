@@ -37,10 +37,25 @@ def create_accelerations(acceleration_models, bodies):
     if acceleration_models['Earth']["drag"]:
         accelerations_due_to_earth.append(propagation_setup.acceleration.aerodynamic())
 
+    accelerations_due_to_venus = []
+    if acceleration_models['Venus']["point_mass_gravity"]:
+        accelerations_due_to_venus.append(propagation_setup.acceleration.point_mass_gravity())
+
+    accelerations_due_to_mars = []
+    if acceleration_models['Mars']["point_mass_gravity"]:
+        accelerations_due_to_mars.append(propagation_setup.acceleration.point_mass_gravity())
+
+    accelerations_due_to_jupiter = []
+    if acceleration_models['Jupiter']["point_mass_gravity"]:
+        accelerations_due_to_jupiter.append(propagation_setup.acceleration.point_mass_gravity())
+
     accelerations_settings_delfi = dict(
         Sun=accelerations_due_to_sun,
         Moon=accelerations_due_to_moon,
-        Earth=accelerations_due_to_earth
+        Earth=accelerations_due_to_earth,
+        Venus=accelerations_due_to_venus,
+        Mars=accelerations_due_to_mars,
+        Jupiter=accelerations_due_to_jupiter
     )
 
     # Create global accelerations dictionary

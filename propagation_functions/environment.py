@@ -7,7 +7,7 @@ from tudatpy.kernel.numerical_simulation.environment_setup import ephemeris
 
 def define_body_settings(multi_arc_ephemeris=False):
 
-    bodies_to_create = ["Earth", "Sun", "Moon"]
+    bodies_to_create = ["Earth", "Sun", "Moon", "Venus", "Mars", "Jupiter"]
 
     # Create default body settings for bodies_to_create, with "Earth"/"J2000" as the global frame origin and orientation
     global_frame_origin = "SSB"

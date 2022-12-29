@@ -68,6 +68,15 @@ acceleration_models = dict(
         'point_mass_gravity': False,
         'spherical_harmonic_gravity': True,
         'drag': True
+    },
+    Venus={
+        'point_mass_gravity': True
+    },
+    Mars={
+        'point_mass_gravity': True
+    },
+    Jupiter={
+        'point_mass_gravity': True
     }
 )
 accelerations = create_accelerations(acceleration_models, bodies)
@@ -156,3 +165,9 @@ ax.set_xlabel('Time [hours since start of day]')
 ax.set_ylabel('Doppler [m/s]')
 plt.grid()
 plt.show()
+
+
+# --------------------------------------
+# 4/ Compare simulated and recorded pass
+# --------------------------------------
+
