@@ -38,8 +38,8 @@ data = ['Delfi-C3_32789_202004011044.DOP1C', 'Delfi-C3_32789_202004011219.DOP1C'
         'Delfi-C3_32789_202004081135.DOP1C']
 
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
-indices_files_to_load = [0, 1]
-# indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+# indices_files_to_load = [0, 1]
+indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 
 # Retrieve initial epoch and state of the first pass
@@ -58,8 +58,8 @@ passes_start_times, passes_end_times, observation_times, observations_set = load
 
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
-# Three options: one arc per pass ('per_pass'), one arc per day ('per_day') and one arc per week ('per_week')
-arc_start_times, arc_end_times = define_arcs('per_day', passes_start_times, passes_end_times)
+# Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
+arc_start_times, arc_end_times = define_arcs('per_3_days', passes_start_times, passes_end_times)
 
 print('arc_start_times', arc_start_times)
 print('arc_end_times', arc_end_times)
@@ -180,9 +180,6 @@ mean_residuals = statistics.mean(residuals[:,nb_iterations-1])
 std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
 
 residuals_per_pass = get_residuals_per_pass(observation_times, residuals, passes_start_times)
-
-for i in range(len(residuals_per_pass)):
-    print('size residuals current pass', np.shape(residuals_per_pass[i]))
 
 # Plot residuals
 fig = plt.figure()

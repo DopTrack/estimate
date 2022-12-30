@@ -22,7 +22,7 @@ def define_arcs(option, passes_start_times, passes_end_times):
             arc_start_times.append(passes_start_times[i] - 3600.0)
             arc_end_times.append(passes_end_times[i] + 3600.0)
 
-    elif option == "per_day" or option == "per_week":
+    elif option == "per_day" or option == "per_week" or option == "per_3_days":
         days_start_times = get_days_starting_times(passes_start_times)
         days_end_times = get_days_end_times(days_start_times)
 
@@ -44,6 +44,24 @@ def define_arcs(option, passes_start_times, passes_end_times):
                     beginning_week = days_start_times[i]
 
             arc_end_times.append(days_end_times[len(days_end_times)-1])
+
+        elif option == "per_3_days":
+            counter_days = 0
+            arc_start_times.append(days_start_times[0])
+            beginning_week = days_start_times[0]
+            for i in range(1, len(days_start_times)):
+                counter_days = int((days_start_times[i] - beginning_week) / 86400)
+                # print('counter_days', counter_days)
+                if counter_days == 3:
+                    arc_end_times.append(days_end_times[i - 1])
+                    arc_start_times.append(days_start_times[i])
+                    counter_days = 0
+                    beginning_week = days_start_times[i]
+
+            arc_end_times.append(days_end_times[len(days_end_times) - 1])
+
+    else:
+        raise Exception('Error when defining tracking arcs, the time interval is not recognised.')
 
     return arc_start_times, arc_end_times
 
