@@ -51,5 +51,5 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
 
     sat = twoline2rv(line1_tle, line2_tle, wgs84)
     b_star = sat.bstar
-    print('b star', b_star)
-    return initial_time, initial_state_array
+
+    return initial_time, initial_state_array, b_star

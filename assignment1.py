@@ -23,7 +23,7 @@ data_folder = 'data/'
 metadata_file = metadata_folder + 'Delfi-C3_32789_202004020904.yml'
 
 # Retrieve initial state from TLE and associated time
-initial_epoch, initial_state_teme = get_tle_initial_conditions(metadata_file)
+initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_file)
 
 # Define start of the day (initial time of the propagation)
 start_recording_day = get_start_next_day(initial_epoch)
@@ -44,10 +44,12 @@ print('final epoch', final_epoch)
 # Define the propagation environment. This function creates a body "Delfi" with the following characteristics.
 # The Earth, Sun and Moon are also created, with default settings (gravity field, ephemeris, rotation, etc.)
 mass_delfi = 2.2
-reference_area_delfi = 0.035
-drag_coefficient_delfi = 1.4
-srp_coefficient_delfi = 2.4
-bodies = define_environment(mass_delfi, reference_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
+ref_area_delfi = 0.035
+drag_coefficient_delfi = get_drag_coefficient(mass_delfi, ref_area_delfi, b_star_coef, from_tle=True)
+srp_coefficient_delfi = 1.2
+bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
+bodies.get("Venus").mass = 4.867e24
+bodies.get("Venus").gravity_field_model.gravitational_parameter = 4.867e24 * constants.GRAVITATIONAL_CONSTANT
 
 # Set Delfi's initial state to the TLE prediction
 initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
@@ -77,15 +79,15 @@ acceleration_models = dict(
         'point_mass_gravity': True
     }
 )
-accelerations = create_accelerations(acceleration_models, bodies)
+accelerations, accelerations_to_save, accelerations_ids = create_accelerations(acceleration_models, bodies, save_accelerations=True)
 
 # Create propagator settings
 propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
 
 # Propagate dynamics of the Delfi satellite from initial_epoch to final_epoch, starting from initial_state
 # The propagation output is given in cartesian and keplerian states, and the latitude/longitude of the spacecraft are also saved.
-cartesian_states, keplerian_states, latitudes, longitudes =\
-    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
+cartesian_states, keplerian_states, latitudes, longitudes, saved_accelerations =\
+    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True, accelerations_to_save)
 
 # Plot propagated orbit
 fig = plt.figure(figsize=(6,6), dpi=125)
@@ -97,6 +99,20 @@ ax.legend()
 ax.set_xlabel('x [m]')
 ax.set_ylabel('y [m]')
 ax.set_zlabel('z [m]')
+plt.show()
+
+
+# Plot accelerations exerted on Delfi
+fig = plt.figure()
+ax = fig.add_subplot()
+ax.set_title(f'Accelerations on Delfi')
+for i in range(np.shape(saved_accelerations)[1]-1):
+    ax.plot((saved_accelerations[:, 0]-start_recording_day)/86400, saved_accelerations[:, i+1], label=accelerations_ids[i], linestyle='-')
+ax.legend()
+ax.set_xlabel('Time [Days since first recording day]')
+ax.set_ylabel('Acceleration [m/s]')
+plt.yscale('log')
+plt.grid()
 plt.show()
 
 

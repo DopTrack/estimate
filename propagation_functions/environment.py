@@ -1,9 +1,19 @@
 # Load tudatpy modules
+import numpy as np
+
 from tudatpy.kernel import constants
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.numerical_simulation import environment_setup
 from tudatpy.kernel.numerical_simulation.environment_setup import ephemeris
+
+
+def get_drag_coefficient(mass, ref_area, b_star, from_tle):
+    if from_tle:
+        return 2.0 * mass / (0.1570 * ref_area) * b_star
+    else:
+        return 1.4
+
 
 def define_body_settings(multi_arc_ephemeris=False):
 
@@ -23,7 +33,8 @@ def define_body_settings(multi_arc_ephemeris=False):
 
     return body_settings
 
-def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, multi_arc_ephemeris = False):
+
+def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, multi_arc_ephemeris=False):
 
     # Load spice kernels
     spice.load_standard_kernels()
@@ -38,8 +49,8 @@ def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, 
     bodies.get("Delfi").mass = mass
 
     # Create aerodynamic coefficient interface settings
-    aero_coefficient_settings = environment_setup.aerodynamic_coefficients.constant(reference_area,
-                                                                                    [drag_coefficient, 0.0, 0.0])
+    aero_coefficient_settings = environment_setup.aerodynamic_coefficients.constant(
+        reference_area, np.array([drag_coefficient, 0.0, 0.0]))
 
     # Add the aerodynamic interface to the environment
     environment_setup.add_aerodynamic_coefficient_interface(bodies, "Delfi", aero_coefficient_settings)
