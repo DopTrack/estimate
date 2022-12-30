@@ -63,4 +63,7 @@ def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, 
     # Add the radiation pressure interface to the environment
     environment_setup.add_radiation_pressure_interface(bodies, "Delfi", radiation_pressure_settings)
 
+    bodies.get("Venus").mass = 4.867e24
+    bodies.get("Venus").gravity_field_model.gravitational_parameter = 4.867e24 * constants.GRAVITATIONAL_CONSTANT
+
     return bodies

@@ -48,8 +48,6 @@ ref_area_delfi = 0.035
 drag_coefficient_delfi = get_drag_coefficient(mass_delfi, ref_area_delfi, b_star_coef, from_tle=True)
 srp_coefficient_delfi = 1.2
 bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
-bodies.get("Venus").mass = 4.867e24
-bodies.get("Venus").gravity_field_model.gravitational_parameter = 4.867e24 * constants.GRAVITATIONAL_CONSTANT
 
 # Set Delfi's initial state to the TLE prediction
 initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
