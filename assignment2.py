@@ -38,8 +38,8 @@ data = ['Delfi-C3_32789_202004011044.DOP1C', 'Delfi-C3_32789_202004011219.DOP1C'
         'Delfi-C3_32789_202004081135.DOP1C']
 
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
-# indices_files_to_load = [0]
-indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+indices_files_to_load = [0, 1]
+# indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 
 # Retrieve initial epoch and state of the first pass
@@ -175,32 +175,39 @@ nb_iterations = 10
 nb_arcs = len(arc_start_times)
 pod_output = run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs, nb_iterations)
 
-print(pod_output.formal_errors)
-
 residuals = pod_output.residual_history
 mean_residuals = statistics.mean(residuals[:,nb_iterations-1])
 std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
 
-print('mean', mean_residuals)
-print('standard deviation', std_residuals)
+residuals_per_pass = get_residuals_per_pass(observation_times, residuals, passes_start_times)
 
-
+for i in range(len(residuals_per_pass)):
+    print('size residuals current pass', np.shape(residuals_per_pass[i]))
 
 # Plot residuals
-fig = plt.figure(figsize=(6,6), dpi=125)
-ax = fig.add_subplot()
-ax.set_title(f'Residuals [m/s]')
+fig = plt.figure()
+fig.tight_layout()
+fig.subplots_adjust(hspace=0.3)
 
-# ax.plot(residuals[:,0], color='red', linestyle='-.')
-# ax.plot(residuals[:,1], color='green', linestyle='-.')
-# ax.plot(residuals[:,2], color='green', linestyle='-.')
-ax.plot(residuals[:,nb_iterations-1],color='blue', linestyle='-.')
-
-# ax.legend()
-ax.set_xlabel('Time [s]')
-ax.set_ylabel('Doppler [m/s]')
-plt.grid()
+for i in range(len(passes_start_times)):
+    ax = fig.add_subplot(len(passes_start_times), 1, i+1)
+    ax.plot(residuals_per_pass[i], color='blue', linestyle='-.')
+    ax.set_xlabel('Time [s]')
+    ax.set_ylabel('Residuals [m/s]')
+    ax.set_title(f'Pass '+str(i+1))
+    plt.grid()
 plt.show()
+
+
+# # Plot residuals
+# fig = plt.figure(figsize=(6,6), dpi=125)
+# ax = fig.add_subplot()
+# ax.set_title(f'Residuals [m/s]')
+# ax.plot(residuals[:,nb_iterations-1],color='blue', linestyle='-.')
+# ax.set_xlabel('Time [s]')
+# ax.set_ylabel('Doppler [m/s]')
+# plt.grid()
+# plt.show()
 
 # Plot residuals histogram
 fig = plt.figure()

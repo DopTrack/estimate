@@ -334,3 +334,29 @@ def create_dummy_estimator(bodies, propagator_settings, integrator_settings, obs
 
     # Create the estimator object
     return numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, propagator_settings, True)
+
+
+def get_residuals_per_pass(obs_times, residuals, passes_start_times):
+    residuals_per_pass = []
+
+    current_pass = 0
+    current_pass_residuals = []
+    for i in range(len(residuals)):
+        time = obs_times[i]
+        if current_pass < len(passes_start_times)-1:
+            if time > passes_start_times[current_pass+1]:
+                current_pass += 1
+                current_pass_residuals = np.array(current_pass_residuals)
+                residuals_per_pass.append(current_pass_residuals)
+                current_pass_residuals = []
+                current_pass_residuals.append(residuals[i, -1])
+            else:
+                current_pass_residuals.append(residuals[i, -1])
+        else:
+            current_pass_residuals.append(residuals[i, -1])
+
+    # Save residuals for final pass
+    current_pass_residuals = np.array(current_pass_residuals)
+    residuals_per_pass.append(current_pass_residuals)
+
+    return residuals_per_pass
