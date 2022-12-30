@@ -49,7 +49,7 @@ Before running anything, make sure to extract the contents of the compressed fol
 Educational course material
 ---------------
 
-To run the practical you need to install an additional elements:
+To run the practical you need to install additional elements:
 
 Make sure to install the Jupyter Lab software within the environment as well
 ```
