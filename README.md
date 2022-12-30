@@ -46,3 +46,16 @@ git clone git@github.com:DopTrack/estimate.git
 
 Before running anything, make sure to extract the contents of the compressed folders data.tar.xz and metadata.tar.xz on which the current scripts rely.
 
+Educational course material
+---------------
+
+To run the practical you need to install an additional elements:
+
+Make sure to install the Jupyter Lab software within the environment as well
+```
+conda install -c conda-forge jupyterlab
+```
+In one of the Jupyter notebooks you need a Cartopy python package to install
+```
+pip3 install cartopy
+```
