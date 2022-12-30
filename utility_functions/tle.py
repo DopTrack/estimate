@@ -7,6 +7,9 @@ import datetime
 from doptrack.recording import Recording
 from doptrack.astro import TLE, TLESatellite
 
+from sgp4.io import twoline2rv
+from sgp4.earth_gravity import wgs84
+
 from tudatpy.kernel import constants
 
 from utility_functions.time import *
@@ -46,4 +49,7 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
 
     initial_time = (julian_date - j2000_days) * 86400.0
 
+    sat = twoline2rv(line1_tle, line2_tle, wgs84)
+    b_star = sat.bstar
+    print('b star', b_star)
     return initial_time, initial_state_array

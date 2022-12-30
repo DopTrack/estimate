@@ -38,10 +38,8 @@ data = ['Delfi-C3_32789_202004011044.DOP1C', 'Delfi-C3_32789_202004011219.DOP1C'
         'Delfi-C3_32789_202004081135.DOP1C']
 
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
-# 1. & 2. only one pass
-# 3. & 4. all passes
-indices_files_to_load = [0, 1]
-# indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+# indices_files_to_load = [0]
+indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 
 # Retrieve initial epoch and state of the first pass
@@ -61,7 +59,7 @@ passes_start_times, passes_end_times, observation_times, observations_set = load
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
 # Three options: one arc per pass ('per_pass'), one arc per day ('per_day') and one arc per week ('per_week')
-arc_start_times, arc_end_times = define_arcs('per_week', passes_start_times, passes_end_times)
+arc_start_times, arc_end_times = define_arcs('per_day', passes_start_times, passes_end_times)
 
 print('arc_start_times', arc_start_times)
 print('arc_end_times', arc_end_times)
@@ -144,21 +142,16 @@ observation_settings = define_observation_settings(Doppler_models, passes_start_
 # Define parameters to estimate
 parameters_list = dict(
     initial_state_delfi={
-        'estimate': True,
-        'type': 'per_arc' # Do not modify this entry. To modify the frequency at which Delfi's initial state is estimated,
-                          # the tracking arc duration should be directly modified (go to line 64 and change the arc definition)
+        'estimate': True
     },
     absolute_bias={
-        'estimate': True,
-        'type': bias_definition # Do not modify this entry, it should be consistent with the bias definition above
+        'estimate': True
     },
     relative_bias={
-        'estimate': True,
-        'type': bias_definition # Idem
+        'estimate': True
     },
     time_bias={
-        'estimate': True,
-        'type': bias_definition # Idem
+        'estimate': True
     }
 )
 parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
@@ -196,7 +189,7 @@ print('standard deviation', std_residuals)
 # Plot residuals
 fig = plt.figure(figsize=(6,6), dpi=125)
 ax = fig.add_subplot()
-ax.set_title(f'Residuals')
+ax.set_title(f'Residuals [m/s]')
 
 # ax.plot(residuals[:,0], color='red', linestyle='-.')
 # ax.plot(residuals[:,1], color='green', linestyle='-.')
@@ -214,7 +207,7 @@ fig = plt.figure()
 ax = fig.add_subplot()
 # plt.hist(residuals[:,1],100)
 plt.hist(residuals[:,nb_iterations-1],100)
-ax.set_xlabel('Doppler residuals [m/s]')
+ax.set_xlabel('Doppler residuals')
 ax.set_ylabel('Nb occurrences []')
 plt.grid()
 plt.show()
