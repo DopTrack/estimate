@@ -4,6 +4,7 @@ from scipy.interpolate import interp1d # interpolation function
 
 from estimation_functions.estimation import define_link_ends
 from utility_functions.time import jday
+from utility_functions.tle import get_tle_ref_time
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -50,7 +51,28 @@ def process_observations(filename: str, fraction_discarded: float = 0.1) -> np.a
     return np.array(observations)
 
 
-def load_and_format_observations(data_folder, data, index_files=[]):
+def process_observations_new(filename: str, ref_time, fraction_discarded: float = 0.1) -> np.array:
+
+    observations = []
+    j2000_days = 2451545.0
+
+    f = open(filename, 'r')
+    lines = f.readlines()
+    nb_points = len(lines)
+    print('nb_points', nb_points)
+    nb_discarded_points = int(fraction_discarded / 2.0 * nb_points)
+    # print('nb_discarded_points', nb_discarded_points)
+
+    # Retrieve observations of interest
+    for line in lines[nb_discarded_points + 1:nb_points - nb_discarded_points]:
+        result = line.strip().split(',')
+        observations.append([float(result[0])+ref_time, float(result[2])])
+    f.close()
+
+    return np.array(observations)
+
+
+def load_and_format_observations(data_folder, data, index_files=[], metadata=[], new_obs_format=False):
 
     passes_start_times = []
     passes_end_times = []
@@ -59,11 +81,22 @@ def load_and_format_observations(data_folder, data, index_files=[]):
         for i in range(len(data)):
             index_files.append(i)
 
-    existing_data = process_observations(data_folder + data[index_files[0]])
+    if not new_obs_format:
+        existing_data = process_observations(data_folder + data[index_files[0]])
+    else:
+        if len(metadata) == 0:
+            raise Exception('Error when using new observation format, metadata should be provided as input to load_and_format_observations')
+        ref_time = get_tle_ref_time(data_folder + metadata[0])
+        existing_data = process_observations_new(data_folder + data[index_files[0]], ref_time)
+
     passes_start_times.append(existing_data[0, 0] - 10.0)
     passes_end_times.append(existing_data[np.shape(existing_data)[0]-1, 0]+10.0)
     for i in range(1, len(index_files)):
-        data_set = process_observations(data_folder + data[index_files[i]])
+        if not new_obs_format:
+            data_set = process_observations(data_folder + data[index_files[i]])
+        else:
+            ref_time = get_tle_ref_time(data_folder + metadata[i])
+            data_set = process_observations_new(data_folder + data[index_files[i]], ref_time)
         passes_start_times.append(data_set[0, 0] - 10.0)
         passes_end_times.append(data_set[np.shape(data_set)[0]-1, 0] + 10.0)
         existing_data = np.concatenate((existing_data, data_set))

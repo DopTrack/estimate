@@ -247,6 +247,16 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
             elif parameters_list.get('drag_coefficient').get('type') == 'global':
                 parameter_settings.append(estimation_setup.parameter.constant_drag_coefficient("Delfi"))
 
+    # Solar radiation pressure coefficient(s)
+    if "srp_coefficient" in parameters_list:
+        if parameters_list.get('srp_coefficient').get('estimate'):
+            if parameters_list.get('srp_coefficient').get('type') == 'per_pass':
+                parameter_settings.append(estimation_setup.parameter.arcwise_radiation_pressure_coefficient("Delfi", passes_start_times))
+            elif parameters_list.get('srp_coefficient').get('type') == 'per_arc':
+                parameter_settings.append(estimation_setup.parameter.arcwise_radiation_pressure_coefficient("Delfi", arc_start_times))
+            elif parameters_list.get('srp_coefficient').get('type') == 'global':
+                parameter_settings.append(estimation_setup.parameter.radiation_pressure_coefficient("Delfi"))
+
     # Gravitational parameter
     if "gravitational_parameter" in parameters_list:
         if parameters_list.get('gravitational_parameter').get('estimate'):
