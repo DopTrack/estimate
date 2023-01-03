@@ -67,9 +67,9 @@ def define_arcs(option, passes_start_times, passes_end_times):
 
 
 def define_doptrack_station(bodies):
-    station_altitude = 0.0
-    delft_latitude = np.deg2rad(51.9899)
-    delft_longitude = np.deg2rad(4.3754)
+    station_altitude = 100.0
+    delft_latitude = np.deg2rad(51.015663)#np.deg2rad(51.9899)
+    delft_longitude = np.deg2rad(4.0068216)#np.deg2rad(4.3754)
 
     # Add the ground station to the environment
     environment_setup.add_ground_station(bodies.get_body("Earth"), "DopTrackStation",

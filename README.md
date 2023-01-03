@@ -25,7 +25,6 @@ git clone git@github.com:DopTrack/Process.git
 ```
 
 and install it inside the newly created environment:
-
 ```
 cd Process
 pip install -e .
@@ -55,6 +54,7 @@ Make sure to install the Jupyter Lab software within the environment as well
 ```
 conda install -c conda-forge jupyterlab
 ```
+
 In one of the Jupyter notebooks you need a Cartopy python package to install
 ```
 pip3 install cartopy
