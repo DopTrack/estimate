@@ -11,6 +11,7 @@ from estimation_functions.observations_data import *
 
 from utility_functions.time import *
 from utility_functions.tle import *
+from utility_functions.data import extract_tar
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -21,6 +22,10 @@ from tudatpy.kernel.numerical_simulation import estimation_setup
 from tudatpy.kernel.astro import element_conversion
 
 j2000_days = 2451545.0
+
+# Extract data
+# extract_tar("./metadata.tar.xz")
+# extract_tar("./data.tar.xz")
 
 # Define import folder
 metadata_folder = 'nayif_data/' # 'metadata/'
