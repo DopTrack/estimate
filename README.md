@@ -39,7 +39,7 @@ conda activate doptrack-estimate
 
 ## Run notebooks
 
-The installation comes with Jupyterlab. To start jupyterlab, activate the `doptrack-estimate environment and run the following command within the repository directory
+The installation comes with Jupyterlab. To start jupyterlab, activate the `doptrack-estimate` environment and run the following command within the repository directory
 
 ```
 jupyter lab
