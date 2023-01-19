@@ -1,61 +1,48 @@
-Installation
----------------
+# Doptrack estimate
 
-First install TudatPy following the steps below.
+_Add description of the purpose of the software_
 
-Start by verifying that conda is installed (otherwise check installation guide in Anaconda documentation). Then download the required environment:
-```
-wget https://tudat-space.readthedocs.io/en/latest/_downloads/dfbbca18599275c2afb33b6393e89994/environment.yaml
-```
+## Installation
 
-Create and activate environment
-```
-conda env create -f environment.yaml
-conda activate tudat-space
-```
+**Requirements**
+- Anaconda/miniconda installation
+- Git 
 
-Make sure to install the development version of Tudat (most up-to-date)
+We recommend to use conda for managing the installation of the required dependencies. Please consult the documentation to install either [Anaconda](https://docs.anaconda.com/anaconda/install/) or [miniconda](https://docs.conda.io/en/main/miniconda.html).
+
+Run the line below in your terminal to verify that conda is installed:
 ```
-conda install -c tudat-team/label/dev tudatpy
+conda --version
 ```
 
-Then get the DopTrack software package:
+We recommend using mamba for better performance when installing the dependencies. To install mamba in the base conda environment, execute
 ```
-git clone git@github.com:DopTrack/Process.git
-```
-
-and install it inside the newly created environment:
-```
-cd Process
-pip install -e .
+conda install -n base -c conda-forge mamba -y
 ```
 
-Go back to main folder
-```
-cd ..
-```
-
-Download code
----------------
-
-Then get estimate repository:
+Download the Doptrack estimate repository with the assignments and data using
 ```
 git clone git@github.com:DopTrack/estimate.git
 ```
 
-Before running anything, make sure to extract the contents of the compressed folders data.tar.xz and metadata.tar.xz on which the current scripts rely.
-
-Educational course material
----------------
-
-To run the practical you need to install additional elements:
-
-Make sure to install the Jupyter Lab software within the environment as well
+Then, move inside the `estimate` folder and install the dependencies with
 ```
-conda install -c conda-forge jupyterlab
+mamba env create -f environment.yml
 ```
 
-In one of the Jupyter notebooks you need a Cartopy python package to install
+Note, the installation can take a while (~15 min) as the depedency `tudatpy` needs to download additional data files during installation. 
+
+Finally, to access the installed dependencies, activate the `doptrack-estimate` environment with
 ```
-pip3 install cartopy
+conda activate doptrack-estimate
 ```
+
+## Run notebooks
+
+The installation comes with Jupyterlab. To start jupyterlab, activate the `doptrack-estimate` environment and run the following command within the repository directory
+
+```
+jupyter lab
+```
+
+Data and metadata can be found in the tar files and is extracted during the execution of the scripts.

@@ -11,6 +11,7 @@ from estimation_functions.observations_data import *
 
 from utility_functions.time import *
 from utility_functions.tle import *
+from utility_functions.data import extract_tar
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -22,7 +23,11 @@ from tudatpy.kernel.astro import element_conversion
 
 j2000_days = 2451545.0
 
-# Define import folder
+# Extract data
+extract_tar("./metadata.tar.xz")
+extract_tar("./data.tar.xz")
+
+# Define import folders
 metadata_folder = 'metadata/'
 data_folder = 'data/'
 

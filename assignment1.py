@@ -6,6 +6,7 @@ from propagation_functions.environment import *
 from propagation_functions.propagation import *
 from utility_functions.time import *
 from utility_functions.tle import *
+from utility_functions.data import extract_tar
 from estimation_functions.observations_data import *
 from estimation_functions.estimation import *
 
@@ -14,6 +15,10 @@ from tudatpy.kernel import constants
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.astro import element_conversion
+
+# Extract data
+extract_tar("./metadata.tar.xz")
+extract_tar("./data.tar.xz")
 
 # Define import folders
 metadata_folder = 'metadata/'
