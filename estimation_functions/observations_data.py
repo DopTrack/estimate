@@ -86,7 +86,7 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
     else:
         if len(metadata) == 0:
             raise Exception('Error when using new observation format, metadata should be provided as input to load_and_format_observations')
-        ref_time = get_tle_ref_time(data_folder + metadata[0])
+        ref_time = get_tle_ref_time(data_folder + metadata[index_files[0]])
         existing_data = process_observations_new(data_folder + data[index_files[0]], ref_time)
 
     passes_start_times.append(existing_data[0, 0] - 10.0)
@@ -95,7 +95,7 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
         if not new_obs_format:
             data_set = process_observations(data_folder + data[index_files[i]])
         else:
-            ref_time = get_tle_ref_time(data_folder + metadata[i])
+            ref_time = get_tle_ref_time(data_folder + metadata[index_files[i]])
             data_set = process_observations_new(data_folder + data[index_files[i]], ref_time)
         passes_start_times.append(data_set[0, 0] - 10.0)
         passes_end_times.append(data_set[np.shape(data_set)[0]-1, 0] + 10.0)
@@ -119,6 +119,90 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
     observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
 
     return passes_start_times, passes_end_times, obs_times, observations_set
+
+
+def load_existing_observations(data_folder, data, index_files=[], metadata=[], new_obs_format=False):
+
+    passes_start_times = []
+    passes_end_times = []
+
+    if len(index_files) == 0:
+        for i in range(len(data)):
+            index_files.append(i)
+
+    if not new_obs_format:
+        existing_data = process_observations(data_folder + data[index_files[0]])
+    else:
+        if len(metadata) == 0:
+            raise Exception('Error when using new observation format, metadata should be provided as input to load_and_format_observations')
+        ref_time = get_tle_ref_time(data_folder + metadata[index_files[0]])
+        existing_data = process_observations_new(data_folder + data[index_files[0]], ref_time)
+
+    passes_start_times.append(existing_data[0, 0] - 10.0)
+    passes_end_times.append(existing_data[np.shape(existing_data)[0]-1, 0]+10.0)
+    for i in range(1, len(index_files)):
+        if not new_obs_format:
+            data_set = process_observations(data_folder + data[index_files[i]])
+        else:
+            ref_time = get_tle_ref_time(data_folder + metadata[index_files[i]])
+            data_set = process_observations_new(data_folder + data[index_files[i]], ref_time)
+        passes_start_times.append(data_set[0, 0] - 10.0)
+        passes_end_times.append(data_set[np.shape(data_set)[0]-1, 0] + 10.0)
+        existing_data = np.concatenate((existing_data, data_set))
+    obs_times = existing_data[:, 0].tolist()
+    obs_values = []
+    for i in range(len(existing_data)):
+        # obs_values.append(np.array([-existing_data[i, 1]/constants.SPEED_OF_LIGHT]))
+        obs_values.append(np.array([-existing_data[i, 1]]))
+
+    return passes_start_times, passes_end_times, obs_times, obs_values
+
+
+def load_simulated_observations(data_folder):
+
+    obs_times = []
+    obs_values = []
+
+    f = open(data_folder+'obs_times.txt', 'r')
+    lines = f.readlines()
+    print('nb lines', len(lines))
+    for line in lines:
+        result = line.strip().split(',')
+        obs_times.append(float(result[0]))
+    f.close()
+
+    f = open(data_folder + 'obs_values.txt', 'r')
+    lines = f.readlines()
+    print('nb lines', len(lines))
+    for line in lines:
+        result = line.strip().split(',')
+        obs_values.append(float(result[0]))
+    f.close()
+
+    return np.array(obs_times), np.array(obs_values)
+
+
+def merge_existing_and_simulated_obs(existing_obs_times, existing_obs_values, simulated_obs_times, simulated_obs_values):
+    # Define link ends
+    link_ends = dict()
+    link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+    link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+
+    # Define fake link ends
+    link_ends_fake = dict()
+    link_ends_fake[observation.receiver] = observation.body_origin_link_end_id("Earth", )
+    link_ends_fake[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+
+    # Set existing observations
+    existing_observation_set = []
+    existing_observation_set.append((link_ends, (existing_obs_values, existing_obs_times)))
+    existing_observation_set.append((link_ends_fake, (simulated_obs_values, simulated_obs_times)))
+    observations_input = dict()
+    observations_input[observation.one_way_instantaneous_doppler_type] = existing_observation_set
+
+    observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
+
+    return observations_set
 
 
 def convert_frequencies_to_range_rate(frequencies):
