@@ -41,22 +41,10 @@ conda activate doptrack-estimate
 
 ## Run notebooks
 
-To run the educational notebooks you need to install jupyterlab with the following command:
-
-```
-conda install -c conda-forge jupyterlab
-```
-
-You also need to install the python cartopy package for some of the assignments:
-
-```
-pip3 install -e cartopy
-````
-
-To start jupyterlab, activate the `doptrack-estimate` environment and run the following command within the repository directory
+The installation comes with Jupyterlab. To start jupyterlab, activate the `doptrack-estimate` environment and run the following command within the repository directory
 
 ```
 jupyter lab
 ```
 
-Navigate to the notebooks Assignment 1, 2, and 3 to go through the course material. The derectories data and metadata can be found in the tar files and should be extracted before the execution of the scripts.
+Data and metadata can be found in the tar files and is extracted during the execution of the scripts.
