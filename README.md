@@ -1,6 +1,8 @@
 # Doptrack estimate
 
-_Add description of the purpose of the software_
+This code connects the tudat software via a python interface to the DopTrack data. Several assignments are constructed to explore the capabilities of the DopTrack estimate module in estimating orbits from the DopTrack data.
+
+The purpose of the software is to estimate orbits from the DopTrack range-rate data using the Tudat Astronomical Toolbox code.
 
 ## Installation
 
@@ -8,7 +10,7 @@ _Add description of the purpose of the software_
 - Anaconda/miniconda installation
 - Git 
 
-We recommend to use conda for managing the installation of the required dependencies. Please consult the documentation to install either [Anaconda](https://docs.anaconda.com/anaconda/install/) or [miniconda](https://docs.conda.io/en/main/miniconda.html).
+We recommend to use conda for managing the installation of the required dependencies. Please consult the documentation to install either [Anaconda](https://docs.anaconda.com/anaconda/install/) or [miniconda](https://docs.conda.io/en/main/miniconda.html). Miniconda is less demanding.
 
 Run the line below in your terminal to verify that conda is installed:
 ```
