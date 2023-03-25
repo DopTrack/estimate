@@ -25,6 +25,7 @@ from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.numerical_simulation import estimation_setup
 from tudatpy.kernel.astro import element_conversion
 from tudatpy.kernel.numerical_simulation.estimation_setup import observation
+from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
 
 j2000_days = 2451545.0
 
@@ -48,19 +49,16 @@ data = ['Nayif-1_42017_202101011249.csv', 'Nayif-1_42017_202101012156.csv', 'Nay
         'Nayif-1_42017_202101061220.csv', 'Nayif-1_42017_202101062300.csv']
 
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
-# indices_files_to_load = [0, 2,
-#                          3, 4,
-#                          7, 8,
-#                          10, 11, 12,
-#                          15, 17,
-#                          21]
-
-indices_files_to_load = [0,
-                         4, 7]#,
+indices_files_to_load = [0, #2,
+                         3, 4]#,
                          # 7, 8,
                          # 10, 11, 12,
                          # 15, 17,
                          # 21]
+
+indices_simulated_data = [0, 5]
+
+add_simulated_data = 1
 
 
 # Retrieve initial epoch and state of the first pass
@@ -75,16 +73,35 @@ start_recording_day = get_start_next_day(initial_epoch)
 
 
 # Calculate final propagation_functions epoch
-nb_days_to_propagate = 9
+nb_days_to_propagate = 3
 final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
 
 print('initial_epoch', initial_epoch)
 print('final_epoch', final_epoch)
 
 # Load and process observations
-passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
+real_passes_start_times, real_passes_end_times, real_obs_times, real_obs_values = load_existing_observations(
     data_folder, data, indices_files_to_load, metadata, new_obs_format=True)
 
+# Load simulated observations
+simulated_passes_start_times, simulated_passes_end_times, simulated_obs_times_per_pass, simulated_obs_values_per_pass = \
+    load_simulated_observations('simulated_nayif_data/', indices_simulated_data)
+
+# Merge simulated and real data
+observations_set = merge_existing_and_simulated_obs(real_obs_times, real_obs_values,
+                                                    simulated_obs_times_per_pass, simulated_obs_values_per_pass, add_simulated_data)
+
+# All passes start and end times
+passes_start_times = real_passes_start_times
+if (add_simulated_data == 1):
+    passes_start_times = real_passes_start_times + simulated_passes_start_times
+passes_end_times = real_passes_end_times
+if (add_simulated_data == 1):
+    passes_end_times = real_passes_end_times + simulated_passes_end_times
+ind = sorted(range(len(passes_start_times)), key=passes_start_times.__getitem__)
+
+passes_start_times = [passes_start_times[i] for i in ind]
+passes_end_times = [passes_end_times[i] for i in ind]
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
 # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
@@ -92,9 +109,13 @@ arc_start_times, arc_end_times = define_arcs('per_3_days', passes_start_times, p
 
 print('arc_start_times', arc_start_times)
 print('arc_end_times', arc_end_times)
+print('nb_arcs', len(arc_start_times))
 
-print('passes_start_times', passes_start_times)
-print('passes_end_times', passes_end_times)
+print('simulated_passes_start_times', simulated_passes_start_times)
+print('simulated_passes_end_times', simulated_passes_end_times)
+
+# print('passes_start_times', passes_start_times)
+# print('passes_end_times', passes_end_times)
 
 
 # Define propagation_functions environment
@@ -153,6 +174,16 @@ multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_i
 
 # Create the DopTrack station
 define_doptrack_station(bodies)
+define_fake_station(bodies)
+
+link_ends_dict = dict()
+link_ends_dict[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+link_ends_dict[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+
+fake_link_ends_dict = dict()
+fake_link_ends_dict[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "FakeStation")
+fake_link_ends_dict[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+fake_link_ends = observation.link_definition(fake_link_ends_dict)
 
 
 # Define default observation settings
@@ -177,7 +208,18 @@ Doppler_models = dict(
         'time_interval': bias_definition
     }
 )
-observation_settings = define_observation_settings(Doppler_models, passes_start_times, arc_start_times)
+# observation_settings = define_observation_settings(Doppler_models, passes_start_times, arc_start_times)
+observation_settings = []
+observation_settings.append(observation.one_way_open_loop_doppler(
+    define_link_ends(), bias_settings=define_biases(Doppler_models, real_passes_start_times, real_passes_start_times)))
+if (add_simulated_data == 1):
+    observation_settings.append(observation.one_way_open_loop_doppler(
+        fake_link_ends, bias_settings=define_biases(Doppler_models, simulated_passes_start_times, simulated_passes_start_times)))
+
+passes_times_per_link_end = []
+passes_times_per_link_end.append((link_ends_dict, real_passes_start_times))
+if (add_simulated_data == 1):
+    passes_times_per_link_end.append((fake_link_ends_dict, simulated_passes_start_times))
 
 # Define parameters to estimate
 parameters_list = dict(
@@ -209,7 +251,7 @@ parameters_list = dict(
         'type': 'global' # can only be global
     },
     C20={
-        'estimate': True,
+        'estimate': False,
         'type': 'global' # can only be global
     },
     C22={
@@ -217,36 +259,39 @@ parameters_list = dict(
         'type': 'global' # can only be global
     }
 )
-
-link_ends = dict()
-link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
-link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
-
-parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
-                                           arc_start_times, [(link_ends, passes_start_times)], Doppler_models)
+parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch, arc_start_times,
+                                           passes_times_per_link_end, Doppler_models)
 estimation_setup.print_parameter_names(parameters_to_estimate)
 
 
 # Create the estimator object
 estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
 
-print('max observation_times', max(observation_times))
-# Simulate (ideal) observations
-ideal_observations = simulate_observations_from_estimator(observation_times, estimator, bodies)
-
-
 # Save the initial parameters values to later analyse the error
 initial_parameters = parameters_to_estimate.parameter_vector
 nb_parameters = len(initial_parameters)
 
+# Retrieve all observations
+all_obs_times = np.array(observations_set.concatenated_times)
+all_obs_values = observations_set.concatenated_observations
+
+estimation_input = estimation.EstimationInput(observations_set)
+estimation_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
+
+
 # Perform estimation_functions
+mu_initial = bodies.get("Earth").gravity_field_model.gravitational_parameter
+
 nb_iterations = 10
 nb_arcs = len(arc_start_times)
 pod_output = run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs, nb_iterations)
 
+mu_updated = bodies.get("Earth").gravity_field_model.gravitational_parameter
+
 residuals = pod_output.residual_history
 mean_residuals = statistics.mean(residuals[:,nb_iterations-1])
 std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
+
 
 # Retrieve updated parameters
 updated_parameters = parameters_to_estimate.parameter_vector
@@ -259,8 +304,8 @@ updated_state = updated_parameters[0:6]
 print('original_state', original_state)
 print('updated_state', updated_state)
 
-original_state_keplerian = element_conversion.cartesian_to_keplerian(original_state, bodies.get("Earth").gravity_field_model.gravitational_parameter)
-updated_state_keplerian = element_conversion.cartesian_to_keplerian(updated_state, bodies.get("Earth").gravity_field_model.gravitational_parameter)
+original_state_keplerian = element_conversion.cartesian_to_keplerian(original_state, mu_initial)
+updated_state_keplerian = element_conversion.cartesian_to_keplerian(updated_state, mu_updated)
 print('original_state_keplerian', original_state_keplerian)
 print('updated_state_keplerian', updated_state_keplerian)
 print('Diff a', updated_state_keplerian[0] - original_state_keplerian[0])
@@ -284,7 +329,11 @@ correlations = pod_output.correlations
 print('formal errors', formal_errors)
 
 # Retrieve residuals per pass
-residuals_per_pass = get_residuals_per_pass(observation_times, residuals, passes_start_times)
+print('passes start times', passes_start_times)
+print('passes end times', passes_end_times)
+residuals_per_pass = get_residuals_per_pass(all_obs_times, residuals, passes_start_times)
+
+print('delta-mu', mu_updated - mu_initial)
 
 # Plot residuals
 fig = plt.figure()

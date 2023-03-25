@@ -32,14 +32,22 @@ metadata_folder = 'metadata/'
 data_folder = 'data/'
 
 # Files to be uploaded
-metadata = ['Delfi-C3_32789_202004011044.yml', 'Delfi-C3_32789_202004011219.yml', 'Delfi-C3_32789_202004020904.yml', 'Delfi-C3_32789_202004021953.yml',
-            'Delfi-C3_32789_202004031031.yml', 'Delfi-C3_32789_202004031947.yml', 'Delfi-C3_32789_202004041200.yml', 'Delfi-C3_32789_202004061012.yml',
-            'Delfi-C3_32789_202004062101.yml', 'Delfi-C3_32789_202004062236.yml', 'Delfi-C3_32789_202004072055.yml', 'Delfi-C3_32789_202004072230.yml',
+metadata = ['Delfi-C3_32789_202004011044.yml', 'Delfi-C3_32789_202004011219.yml',
+            'Delfi-C3_32789_202004020904.yml', 'Delfi-C3_32789_202004021953.yml',
+            'Delfi-C3_32789_202004031031.yml', 'Delfi-C3_32789_202004031947.yml',
+            'Delfi-C3_32789_202004041200.yml',
+
+            'Delfi-C3_32789_202004061012.yml', 'Delfi-C3_32789_202004062101.yml', 'Delfi-C3_32789_202004062236.yml',
+            'Delfi-C3_32789_202004072055.yml', 'Delfi-C3_32789_202004072230.yml',
             'Delfi-C3_32789_202004081135.yml']
 
-data = ['Delfi-C3_32789_202004011044.DOP1C', 'Delfi-C3_32789_202004011219.DOP1C', 'Delfi-C3_32789_202004020904.DOP1C', 'Delfi-C3_32789_202004021953.DOP1C',
-        'Delfi-C3_32789_202004031031.DOP1C', 'Delfi-C3_32789_202004031947.DOP1C', 'Delfi-C3_32789_202004041200.DOP1C', 'Delfi-C3_32789_202004061012.DOP1C',
-        'Delfi-C3_32789_202004062101.DOP1C', 'Delfi-C3_32789_202004062236.DOP1C', 'Delfi-C3_32789_202004072055.DOP1C', 'Delfi-C3_32789_202004072230.DOP1C',
+data = ['Delfi-C3_32789_202004011044.DOP1C', 'Delfi-C3_32789_202004011219.DOP1C',
+        'Delfi-C3_32789_202004020904.DOP1C', 'Delfi-C3_32789_202004021953.DOP1C',
+        'Delfi-C3_32789_202004031031.DOP1C', 'Delfi-C3_32789_202004031947.DOP1C',
+        'Delfi-C3_32789_202004041200.DOP1C',
+
+        'Delfi-C3_32789_202004061012.DOP1C', 'Delfi-C3_32789_202004062101.DOP1C', 'Delfi-C3_32789_202004062236.DOP1C',
+        'Delfi-C3_32789_202004072055.DOP1C', 'Delfi-C3_32789_202004072230.DOP1C',
         'Delfi-C3_32789_202004081135.DOP1C']
 
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
@@ -138,7 +146,7 @@ Doppler_models = dict(
         'activated': True,
         'time_interval': bias_definition
     },
-    time_bias={
+    time_drift={
         'activated': True,
         'time_interval': bias_definition
     }
@@ -156,12 +164,17 @@ parameters_list = dict(
     relative_bias={
         'estimate': True
     },
-    time_bias={
+    time_drift={
         'estimate': True
     }
 )
+
+link_ends_dict = dict()
+link_ends_dict[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+link_ends_dict[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+
 parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
-                                           arc_start_times, passes_start_times, Doppler_models)
+                                           arc_start_times, [(link_ends_dict, passes_start_times)], Doppler_models)
 estimation_setup.print_parameter_names(parameters_to_estimate)
 
 # Create the estimator object

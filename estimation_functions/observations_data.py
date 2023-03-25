@@ -12,7 +12,7 @@ from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 import tudatpy.kernel.numerical_simulation.estimation as tudat_estimation
 
 
-def process_observations(filename: str, fraction_discarded: float = 0.1) -> np.array:
+def process_observations_old(filename: str, fraction_discarded: float = 0.1) -> np.array:
 
     observations = []
     j2000_days = 2451545.0
@@ -20,9 +20,7 @@ def process_observations(filename: str, fraction_discarded: float = 0.1) -> np.a
     f = open(filename, 'r')
     lines = f.readlines()
     nb_points = len(lines)
-    # print('nb_points', nb_points)
     nb_discarded_points = int(fraction_discarded / 2.0 * nb_points)
-    # print('nb_discarded_points', nb_discarded_points)
 
     # Compute initial epoch
     result = lines[1].strip().split(',')
@@ -35,12 +33,9 @@ def process_observations(filename: str, fraction_discarded: float = 0.1) -> np.a
     hour = time[0]
     minute = time[1]
     second = time[2]
-    # print(hour, minute, second)
 
     initial_julian_date = jday(int(year), int(month), int(day), int(hour), int(minute), int(0)) + float(second) / 86400.0
-    # print(initial_julian_date)
     initial_epoch = (initial_julian_date - j2000_days) * 86400.0 - float(result[1])
-    # print('initial epoch', initial_epoch)
 
     # Retrieve observations of interest
     for line in lines[nb_discarded_points + 1:nb_points - nb_discarded_points]:
@@ -54,14 +49,11 @@ def process_observations(filename: str, fraction_discarded: float = 0.1) -> np.a
 def process_observations_new(filename: str, ref_time, fraction_discarded: float = 0.1) -> np.array:
 
     observations = []
-    j2000_days = 2451545.0
 
     f = open(filename, 'r')
     lines = f.readlines()
     nb_points = len(lines)
-    print('nb_points', nb_points)
     nb_discarded_points = int(fraction_discarded / 2.0 * nb_points)
-    # print('nb_discarded_points', nb_discarded_points)
 
     # Retrieve observations of interest
     for line in lines[nb_discarded_points + 1:nb_points - nb_discarded_points]:
@@ -82,7 +74,7 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
             index_files.append(i)
 
     if not new_obs_format:
-        existing_data = process_observations(data_folder + data[index_files[0]])
+        existing_data = process_observations_old(data_folder + data[index_files[0]])
     else:
         if len(metadata) == 0:
             raise Exception('Error when using new observation format, metadata should be provided as input to load_and_format_observations')
@@ -93,7 +85,7 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
     passes_end_times.append(existing_data[np.shape(existing_data)[0]-1, 0]+10.0)
     for i in range(1, len(index_files)):
         if not new_obs_format:
-            data_set = process_observations(data_folder + data[index_files[i]])
+            data_set = process_observations_old(data_folder + data[index_files[i]])
         else:
             ref_time = get_tle_ref_time(data_folder + metadata[index_files[i]])
             data_set = process_observations_new(data_folder + data[index_files[i]], ref_time)
@@ -131,7 +123,7 @@ def load_existing_observations(data_folder, data, index_files=[], metadata=[], n
             index_files.append(i)
 
     if not new_obs_format:
-        existing_data = process_observations(data_folder + data[index_files[0]])
+        existing_data = process_observations_old(data_folder + data[index_files[0]])
     else:
         if len(metadata) == 0:
             raise Exception('Error when using new observation format, metadata should be provided as input to load_and_format_observations')
@@ -142,7 +134,7 @@ def load_existing_observations(data_folder, data, index_files=[], metadata=[], n
     passes_end_times.append(existing_data[np.shape(existing_data)[0]-1, 0]+10.0)
     for i in range(1, len(index_files)):
         if not new_obs_format:
-            data_set = process_observations(data_folder + data[index_files[i]])
+            data_set = process_observations_old(data_folder + data[index_files[i]])
         else:
             ref_time = get_tle_ref_time(data_folder + metadata[index_files[i]])
             data_set = process_observations_new(data_folder + data[index_files[i]], ref_time)
@@ -158,31 +150,44 @@ def load_existing_observations(data_folder, data, index_files=[], metadata=[], n
     return passes_start_times, passes_end_times, obs_times, obs_values
 
 
-def load_simulated_observations(data_folder):
+def load_simulated_observations(data_folder, indices_simulated_data):
 
-    obs_times = []
-    obs_values = []
+    nb_passes = len(indices_simulated_data)
 
-    f = open(data_folder+'obs_times.txt', 'r')
-    lines = f.readlines()
-    print('nb lines', len(lines))
-    for line in lines:
-        result = line.strip().split(',')
-        obs_times.append(float(result[0]))
-    f.close()
+    obs_times_per_pass = []
+    obs_values_per_pass = []
+    passes_start_times = []
+    passes_end_times = []
 
-    f = open(data_folder + 'obs_values.txt', 'r')
-    lines = f.readlines()
-    print('nb lines', len(lines))
-    for line in lines:
-        result = line.strip().split(',')
-        obs_values.append(float(result[0]))
-    f.close()
+    for i in range(nb_passes):
 
-    return np.array(obs_times), np.array(obs_values)
+        obs_times = []
+        obs_values = []
+
+        f = open(data_folder+'obs_times_pass' + str(indices_simulated_data[i]) + '.txt', 'r')
+        lines = f.readlines()
+        for line in lines:
+            result = line.strip().split(',')
+            obs_times.append(float(result[0]))
+        f.close()
+
+        f = open(data_folder + 'obs_values_pass' + str(indices_simulated_data[i]) + '.txt', 'r')
+        lines = f.readlines()
+        for line in lines:
+            result = line.strip().split(',')
+            obs_values.append(np.array([float(result[0])]))
+        f.close()
+
+        passes_start_times.append(obs_times[0] - 10.0)
+        passes_end_times.append(obs_times[-1] + 10.0)
+
+        obs_times_per_pass.append(obs_times)
+        obs_values_per_pass.append(obs_values)
+
+    return passes_start_times, passes_end_times, obs_times_per_pass, obs_values_per_pass
 
 
-def merge_existing_and_simulated_obs(existing_obs_times, existing_obs_values, simulated_obs_times, simulated_obs_values):
+def merge_existing_and_simulated_obs(existing_obs_times, existing_obs_values, simulated_obs_times_per_pass, simulated_obs_values_per_pass, add_simulated_data):
     # Define link ends
     link_ends = dict()
     link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
@@ -190,13 +195,25 @@ def merge_existing_and_simulated_obs(existing_obs_times, existing_obs_values, si
 
     # Define fake link ends
     link_ends_fake = dict()
-    link_ends_fake[observation.receiver] = observation.body_origin_link_end_id("Earth", )
+    link_ends_fake[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "FakeStation")
     link_ends_fake[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
 
     # Set existing observations
     existing_observation_set = []
     existing_observation_set.append((link_ends, (existing_obs_values, existing_obs_times)))
-    existing_observation_set.append((link_ends_fake, (simulated_obs_values, simulated_obs_times)))
+
+    if (add_simulated_data == 1):
+        all_simulated_obs_times = []
+        all_simulated_obs_values = []
+
+        for k in range(len(simulated_obs_times_per_pass)):
+            all_simulated_obs_times = all_simulated_obs_times + simulated_obs_times_per_pass[k]
+            for i in range(len(simulated_obs_values_per_pass[k])):
+                all_simulated_obs_values.append([simulated_obs_values_per_pass[k][i]])
+
+        existing_observation_set.append((link_ends_fake, (np.array(all_simulated_obs_values), all_simulated_obs_times)))
+
+
     observations_input = dict()
     observations_input[observation.one_way_instantaneous_doppler_type] = existing_observation_set
 

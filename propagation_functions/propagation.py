@@ -56,7 +56,7 @@ def create_accelerations(acceleration_models, bodies, save_accelerations=False):
                     propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Earth"))
                 accelerations_ids.append("point mass gravity Earth")
         if acceleration_models['Earth']["spherical_harmonic_gravity"]:
-            accelerations_due_to_earth.append(propagation_setup.acceleration.spherical_harmonic_gravity(12, 12))
+            accelerations_due_to_earth.append(propagation_setup.acceleration.spherical_harmonic_gravity(2, 2))
             if save_accelerations:
                 dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
                     propagation_setup.acceleration.spherical_harmonic_gravity_type, "Delfi", "Earth"))
@@ -196,8 +196,13 @@ def define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_tim
         integrator_settings = create_integrator_settings(arc_initial_time)
 
         arc_termination_condition = propagation_setup.propagator.time_termination(arc_end_times[i])
+
+        dependent_variables = []
+        dependent_variables.append(propagation_setup.dependent_variable.total_acceleration("Delfi"))
+
         propagator_settings_list.append(propagation_setup.propagator.translational(
-            central_bodies, accelerations, bodies_to_propagate, arc_initial_state, arc_initial_time, integrator_settings, arc_termination_condition))
+            central_bodies, accelerations, bodies_to_propagate, arc_initial_state, arc_initial_time, integrator_settings, arc_termination_condition,
+            output_variables=dependent_variables))
 
     multi_arc_propagator_settings = propagation_setup.propagator.multi_arc(propagator_settings_list)
 

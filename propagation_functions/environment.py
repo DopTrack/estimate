@@ -31,6 +31,30 @@ def define_body_settings(multi_arc_ephemeris=False):
     if multi_arc_ephemeris:
         body_settings.get("Delfi").ephemeris_settings.make_multi_arc_ephemeris = 1
 
+    # Define the spherical harmonics gravity model
+    gravitational_parameter = 3.986004415e14
+    reference_radius = 6378136.3
+    normalized_cosine_coefficients = [
+        [1, 0, 0, 0],
+        [0, 0, 0, 0],
+        [-0.484165371736E-03*1.0, -0.186987635955E-09, 0.243914352398E-05, 0],
+        [0.957254173792E-06, 0.202998882184E-05, 0.904627768605E-06, 0.721072657057E-06]
+    ]
+    normalized_sine_coefficients = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0.119528012031E-08, -0.140016683654E-05, 0],
+        [0, 0.248513158716E-06, -0.619025944205E-06, 0.141435626958E-05]
+    ]
+    associated_reference_frame = "IAU_Earth"
+    # Create the gravity field settings and add them to the body "Earth"
+    body_settings.get("Earth").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic(
+        gravitational_parameter,
+        reference_radius,
+        normalized_cosine_coefficients,
+        normalized_sine_coefficients,
+        associated_reference_frame)
+
     return body_settings
 
 

@@ -189,7 +189,7 @@ plt.show()
 # --------------------------------------
 
 # Index of the *recorded* pass of interest (warning: the number of recorded passes might differ from the number of simulated passes)
-index_pass = 0
+index_pass = 1
 single_pass_start_time = passes_start_times[index_pass]
 single_pass_end_time = passes_end_times[index_pass]
 
