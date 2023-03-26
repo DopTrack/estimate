@@ -192,17 +192,21 @@ def load_simulated_observations(data_folder, indices_simulated_data):
 def merge_existing_and_simulated_obs(stations_real, stations_fake, existing_obs_times, existing_obs_values,
                                      simulated_obs_times_per_pass_and_link_end, simulated_obs_values_per_pass_and_link_end):
     # Define link ends
-    link_ends_doptrack = define_link_ends("DopTrackStation")
+    link_ends_real = []
+    for k in range(len(stations_real)):
+        link_ends_real.append(define_link_ends(stations_real[k]))
 
     # Define fake link ends
     link_ends_fake = []
     for k in range(len(stations_fake)):
         link_ends_fake.append(define_link_ends(stations_fake[k]))
 
-    # Set existing observations
     obs_set = []
-    obs_set.append((link_ends_doptrack, (existing_obs_values, existing_obs_times)))
+    # Set existing observations
+    for j in range(len(stations_real)):
+        obs_set.append((link_ends_real[j], (existing_obs_values[stations_real[j]], existing_obs_times[stations_real[j]])))
 
+    # Set simulated observations
     for j in range(len(stations_fake)):
 
         simulated_obs_times_per_pass = simulated_obs_times_per_pass_and_link_end[stations_fake[j]]
@@ -336,6 +340,25 @@ def get_obs_per_link_end_and_pass(stations, obs_times, obs_values, obs_time_step
         obs_values_per_pass_dict[stations[k]] = obs_values_per_pass
 
     return passes_start_times_dict, passes_end_times_dict, obs_times_per_pass_dict, obs_values_per_pass_dict
+
+
+def get_all_passes_times(real_passes_start_times, real_passes_end_times, simulated_passes_start_times, simulated_passes_end_times):
+    passes_start_times = []
+    passes_end_times = []
+
+    for k in real_passes_start_times:
+        passes_start_times = passes_start_times + real_passes_start_times[k]
+        passes_end_times = passes_end_times + real_passes_end_times[k]
+    for k in simulated_passes_start_times:
+        passes_start_times = passes_start_times + simulated_passes_start_times[k]
+        passes_end_times = passes_end_times + simulated_passes_end_times[k]
+
+    ind = sorted(range(len(passes_start_times)), key=passes_start_times.__getitem__)
+
+    passes_start_times = [passes_start_times[i] for i in ind]
+    passes_end_times = [passes_end_times[i] for i in ind]
+
+    return passes_start_times, passes_end_times
 
 
 def interpolate_obs(simulated_obs, real_obs):
