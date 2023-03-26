@@ -83,36 +83,36 @@ print('final_epoch', final_epoch)
 real_passes_start_times, real_passes_end_times, real_obs_times, real_obs_values = load_existing_observations(
     data_folder, data, indices_files_to_load, metadata, new_obs_format=True)
 
-# Load simulated observations
-simulated_passes_start_times, simulated_passes_end_times, simulated_obs_times_per_pass, simulated_obs_values_per_pass = \
-    load_simulated_observations('simulated_nayif_data/', indices_simulated_data)
+# # Load simulated observations
+# simulated_passes_start_times, simulated_passes_end_times, simulated_obs_times_per_pass, simulated_obs_values_per_pass = \
+#     load_simulated_observations('simulated_nayif_data/', indices_simulated_data)
+#
+# # Merge simulated and real data
+# observations_set = merge_existing_and_simulated_obs(real_obs_times, real_obs_values,
+#                                                     simulated_obs_times_per_pass, simulated_obs_values_per_pass, add_simulated_data)
 
-# Merge simulated and real data
-observations_set = merge_existing_and_simulated_obs(real_obs_times, real_obs_values,
-                                                    simulated_obs_times_per_pass, simulated_obs_values_per_pass, add_simulated_data)
+# # All passes start and end times
+# passes_start_times = real_passes_start_times
+# if (add_simulated_data == 1):
+#     passes_start_times = real_passes_start_times + simulated_passes_start_times
+# passes_end_times = real_passes_end_times
+# if (add_simulated_data == 1):
+#     passes_end_times = real_passes_end_times + simulated_passes_end_times
+# ind = sorted(range(len(passes_start_times)), key=passes_start_times.__getitem__)
+#
+# passes_start_times = [passes_start_times[i] for i in ind]
+# passes_end_times = [passes_end_times[i] for i in ind]
 
-# All passes start and end times
-passes_start_times = real_passes_start_times
-if (add_simulated_data == 1):
-    passes_start_times = real_passes_start_times + simulated_passes_start_times
-passes_end_times = real_passes_end_times
-if (add_simulated_data == 1):
-    passes_end_times = real_passes_end_times + simulated_passes_end_times
-ind = sorted(range(len(passes_start_times)), key=passes_start_times.__getitem__)
-
-passes_start_times = [passes_start_times[i] for i in ind]
-passes_end_times = [passes_end_times[i] for i in ind]
-
-# Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
-# Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
-arc_start_times, arc_end_times = define_arcs('per_3_days', passes_start_times, passes_end_times)
-
-print('arc_start_times', arc_start_times)
-print('arc_end_times', arc_end_times)
-print('nb_arcs', len(arc_start_times))
-
-print('simulated_passes_start_times', simulated_passes_start_times)
-print('simulated_passes_end_times', simulated_passes_end_times)
+# # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
+# # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
+# arc_start_times, arc_end_times = define_arcs('per_3_days', passes_start_times, passes_end_times)
+#
+# print('arc_start_times', arc_start_times)
+# print('arc_end_times', arc_end_times)
+# print('nb_arcs', len(arc_start_times))
+#
+# print('simulated_passes_start_times', simulated_passes_start_times)
+# print('simulated_passes_end_times', simulated_passes_end_times)
 
 # print('passes_start_times', passes_start_times)
 # print('passes_end_times', passes_end_times)
@@ -159,211 +159,293 @@ accelerations, dummy_output_1, dummy_output_2 = create_accelerations(acceleratio
 
 # Propagate dynamics and retrieve Delfi's initial state at the start of each arc
 orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
-arc_wise_initial_states = get_initial_states(bodies, arc_start_times)
 
 
-# Redefine environment to allow for multi-arc dynamics propagation_functions
-bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=True)
-accelerations, dummy_output_1, dummy_output_2 = create_accelerations(acceleration_models, bodies)
 
-real_mu = bodies.get("Earth").gravity_field_model.gravitational_parameter
-bodies.get("Earth").gravity_field_model.gravitational_parameter = 1.0 * bodies.get("Earth").gravity_field_model.gravitational_parameter
+# Create one extra station
+station1 = "FakeStation1"
+coordinates_station1 = np.array([0.0, np.deg2rad(-33.8837), np.deg2rad(151.2007)])
+define_station(bodies, station1, coordinates_station1)
 
-# Define multi-arc propagator settings
-multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations)
+# Create a second extra station
+station2 = "FakeStation2"
+coordinates_station2 = np.array([0.0, np.deg2rad(-33.8837), np.deg2rad(10.0)])
+define_station(bodies, station2, coordinates_station2)
 
-# Create the DopTrack station
-define_doptrack_station(bodies)
-define_fake_station(bodies)
+stations_fake = [station1, station2]
 
-link_ends_dict = dict()
-link_ends_dict[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
-link_ends_dict[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+# Define all downlink link ends for Doppler
+link_ends, link_ends_def = define_all_link_ends(stations_fake)
 
-fake_link_ends_dict = dict()
-fake_link_ends_dict[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "FakeStation")
-fake_link_ends_dict[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
-fake_link_ends = observation.link_definition(fake_link_ends_dict)
+# Define observation settings
+observation_settings = define_ideal_doppler_settings(stations_fake)
 
+# Create list of observation times, with one Doppler measurement every 10 seconds
+possible_obs_times = []
+obs_time_step = 10.0
+current_time = start_recording_day
+while current_time < final_epoch:
+    possible_obs_times.append(current_time)
+    current_time = current_time + obs_time_step
 
-# Define default observation settings
-# Specify on which time interval the observation bias(es) should be defined. This will change throughout the assignment (can be 'per_pass', 'per_arc', 'global')
-# Noting that the arc duration can vary (see arc definition line 64)
-bias_definition = 'per_pass'
-Doppler_models = dict(
-    absolute_bias={
-        'activated': True,
-        'time_interval': bias_definition
-    },
-    relative_bias={
-        'activated': True,
-        'time_interval': bias_definition
-    },
-    time_drift={
-        'activated': True,
-        'time_interval': bias_definition
-    },
-    time_bias={
-        'activated': True,
-        'time_interval': bias_definition
-    }
-)
-# observation_settings = define_observation_settings(Doppler_models, passes_start_times, arc_start_times)
-observation_settings = []
-observation_settings.append(observation.one_way_open_loop_doppler(
-    define_link_ends("DopTrackStation"), bias_settings=define_biases(Doppler_models, real_passes_start_times, real_passes_start_times)))
-if (add_simulated_data == 1):
-    observation_settings.append(observation.one_way_open_loop_doppler(
-        fake_link_ends, bias_settings=define_biases(Doppler_models, simulated_passes_start_times, simulated_passes_start_times)))
+propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
+integrator_settings = create_integrator_settings(initial_epoch)
+estimator = create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings)
 
-passes_times_per_link_end = []
-passes_times_per_link_end.append((link_ends_dict, real_passes_start_times))
-if (add_simulated_data == 1):
-    passes_times_per_link_end.append((fake_link_ends_dict, simulated_passes_start_times))
+# Simulate observations
+simulated_observations = simulate_ideal_simulations(estimator, bodies, link_ends_def, possible_obs_times, stations_fake, 0.0)
 
-# Define parameters to estimate
-parameters_list = dict(
-    initial_state_delfi={
-        'estimate': True
-    },
-    absolute_bias={
-        'estimate': True
-    },
-    relative_bias={
-        'estimate': False
-    },
-    time_drift={
-        'estimate': True
-    },
-    time_bias={
-        'estimate': False
-    },
-    drag_coefficient={
-        'estimate': False,
-        'type': 'per_arc'
-    },
-    srp_coefficient={
-        'estimate': False,
-        'type': 'per_arc'
-    },
-    gravitational_parameter={
-        'estimate': True,
-        'type': 'global' # can only be global
-    },
-    C20={
-        'estimate': False,
-        'type': 'global' # can only be global
-    },
-    C22={
-        'estimate': False,
-        'type': 'global' # can only be global
-    }
-)
-parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch, arc_start_times,
-                                           passes_times_per_link_end, Doppler_models)
-estimation_setup.print_parameter_names(parameters_to_estimate)
+simulated_obs_times = np.array(simulated_observations.concatenated_times)
+simulated_doppler = simulated_observations.concatenated_observations
+
+simulated_passes_start_times, simulated_passes_end_times, obs_times_per_pass, obs_values_per_pass = \
+    get_obs_per_link_end_and_pass(stations_fake, simulated_obs_times, simulated_doppler, obs_time_step)
 
 
-# Create the estimator object
-estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
-
-# Save the initial parameters values to later analyse the error
-initial_parameters = parameters_to_estimate.parameter_vector
-nb_parameters = len(initial_parameters)
-
-# Retrieve all observations
-all_obs_times = np.array(observations_set.concatenated_times)
-all_obs_values = observations_set.concatenated_observations
-
-estimation_input = estimation.EstimationInput(observations_set)
-estimation_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
+# Merge simulated and real data
+stations_real = []
+observations_set = merge_existing_and_simulated_obs(stations_real, stations_fake, real_obs_times, real_obs_values,
+                                                    obs_times_per_pass, obs_values_per_pass)
 
 
-# Perform estimation_functions
-mu_initial = bodies.get("Earth").gravity_field_model.gravitational_parameter
-
-nb_iterations = 10
-nb_arcs = len(arc_start_times)
-pod_output = run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs, nb_iterations)
-
-mu_updated = bodies.get("Earth").gravity_field_model.gravitational_parameter
-
-residuals = pod_output.residual_history
-mean_residuals = statistics.mean(residuals[:,nb_iterations-1])
-std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
 
 
-# Retrieve updated parameters
-updated_parameters = parameters_to_estimate.parameter_vector
-print('initial parameter values', initial_parameters)
-print('updated parameters', updated_parameters)
-print('update', updated_parameters - initial_parameters)
 
-original_state = initial_parameters[0:6]
-updated_state = updated_parameters[0:6]
-print('original_state', original_state)
-print('updated_state', updated_state)
 
-original_state_keplerian = element_conversion.cartesian_to_keplerian(original_state, mu_initial)
-updated_state_keplerian = element_conversion.cartesian_to_keplerian(updated_state, mu_updated)
-print('original_state_keplerian', original_state_keplerian)
-print('updated_state_keplerian', updated_state_keplerian)
-print('Diff a', updated_state_keplerian[0] - original_state_keplerian[0])
-print('Diff e', updated_state_keplerian[1] - original_state_keplerian[1])
-print('Diff i', (updated_state_keplerian[2] - original_state_keplerian[2]) * 180.0 / math.pi)
-print('Diff w+true anomaly', ((updated_state_keplerian[3]+updated_state_keplerian[5]) - (original_state_keplerian[3]+original_state_keplerian[5])) * 180.0 / math.pi)
-print('Diff RAAN', (updated_state_keplerian[4] - original_state_keplerian[4]) * 180.0 / math.pi)
 
-# print('real_mu', real_mu)
-# print('initial offset mu', initial_parameters[6] - real_mu)
-# print('final offset mu', updated_parameters[6] - real_mu)
 
-# new_b_star = 0.1570*ref_area_delfi*updated_parameters[12]/(2.0*mass_delfi)
-# print('b_star', b_star_coef)
-# print('new b_star', new_b_star)
 
-# Retrieve formal errors and correlations
-formal_errors = pod_output.formal_errors
-correlations = pod_output.correlations
 
-print('formal errors', formal_errors)
 
-# Retrieve residuals per pass
-print('passes start times', passes_start_times)
-print('passes end times', passes_end_times)
-residuals_per_pass = get_residuals_per_pass(all_obs_times, residuals, passes_start_times)
 
-print('delta-mu', mu_updated - mu_initial)
 
-# Plot residuals
-fig = plt.figure()
-fig.tight_layout()
-fig.subplots_adjust(hspace=0.3)
 
-for i in range(len(passes_start_times)):
-    ax = fig.add_subplot(len(passes_start_times), 1, i+1)
-    ax.plot(residuals_per_pass[i], color='blue', linestyle='-.')
-    ax.set_xlabel('Time [s]')
-    ax.set_ylabel('Residuals [m/s]')
-    ax.set_title(f'Pass '+str(i+1))
-    plt.grid()
-plt.show()
 
-# Plot residuals histogram
-fig = plt.figure()
-ax = fig.add_subplot()
-# plt.hist(residuals[:,1],100)
-plt.hist(residuals[:,-1],100)
-ax.set_xlabel('Doppler residuals')
-ax.set_ylabel('Nb occurrences []')
-plt.grid()
-plt.show()
 
-plt.figure(figsize=(9,5))
-plt.imshow(np.abs(pod_output.correlations), aspect='auto', interpolation='none')
-plt.colorbar()
-plt.tight_layout()
-plt.show()
 
+
+
+
+#
+#
+#
+# arc_wise_initial_states = get_initial_states(bodies, arc_start_times)
+#
+#
+# # Redefine environment to allow for multi-arc dynamics propagation_functions
+# bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=True)
+# accelerations, dummy_output_1, dummy_output_2 = create_accelerations(acceleration_models, bodies)
+#
+# real_mu = bodies.get("Earth").gravity_field_model.gravitational_parameter
+# bodies.get("Earth").gravity_field_model.gravitational_parameter = 1.0 * bodies.get("Earth").gravity_field_model.gravitational_parameter
+#
+# # Define multi-arc propagator settings
+# multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations)
+#
+# ## CREATE DIFFERENT STATIONS
+#
+# # Create the DopTrack station
+# define_doptrack_station(bodies)
+#
+# # Create one extra station
+# station1 = "FakeStation1"
+# coordinates_station1 = np.array([0.0, np.deg2rad(-33.8837), np.deg2rad(151.2007)])
+# define_station(bodies, station1, coordinates_station1)
+#
+# # Create a second extra station
+# station2 = "FakeStation2"
+# coordinates_station2 = np.array([0.0, np.deg2rad(-33.8837), np.deg2rad(10.0)])
+# define_station(bodies, station2, coordinates_station2)
+#
+#
+# link_ends_dict = dict()
+# link_ends_dict[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+# link_ends_dict[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+#
+# fake_link_ends_dict = dict()
+# fake_link_ends_dict[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "FakeStation")
+# fake_link_ends_dict[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+# fake_link_ends = observation.link_definition(fake_link_ends_dict)
+#
+#
+# # Define default observation settings
+# # Specify on which time interval the observation bias(es) should be defined. This will change throughout the assignment (can be 'per_pass', 'per_arc', 'global')
+# # Noting that the arc duration can vary (see arc definition line 64)
+# bias_definition = 'per_pass'
+# Doppler_models = dict(
+#     absolute_bias={
+#         'activated': True,
+#         'time_interval': bias_definition
+#     },
+#     relative_bias={
+#         'activated': True,
+#         'time_interval': bias_definition
+#     },
+#     time_drift={
+#         'activated': True,
+#         'time_interval': bias_definition
+#     },
+#     time_bias={
+#         'activated': True,
+#         'time_interval': bias_definition
+#     }
+# )
+# # observation_settings = define_observation_settings(Doppler_models, passes_start_times, arc_start_times)
+# observation_settings = []
+# observation_settings.append(observation.one_way_open_loop_doppler(
+#     define_link_ends("DopTrackStation"), bias_settings=define_biases(Doppler_models, real_passes_start_times, real_passes_start_times)))
+# if (add_simulated_data == 1):
+#     observation_settings.append(observation.one_way_open_loop_doppler(
+#         fake_link_ends, bias_settings=define_biases(Doppler_models, simulated_passes_start_times, simulated_passes_start_times)))
+#
+# passes_times_per_link_end = []
+# passes_times_per_link_end.append((link_ends_dict, real_passes_start_times))
+# if (add_simulated_data == 1):
+#     passes_times_per_link_end.append((fake_link_ends_dict, simulated_passes_start_times))
+#
+# # Define parameters to estimate
+# parameters_list = dict(
+#     initial_state_delfi={
+#         'estimate': True
+#     },
+#     absolute_bias={
+#         'estimate': True
+#     },
+#     relative_bias={
+#         'estimate': False
+#     },
+#     time_drift={
+#         'estimate': True
+#     },
+#     time_bias={
+#         'estimate': False
+#     },
+#     drag_coefficient={
+#         'estimate': False,
+#         'type': 'per_arc'
+#     },
+#     srp_coefficient={
+#         'estimate': False,
+#         'type': 'per_arc'
+#     },
+#     gravitational_parameter={
+#         'estimate': True,
+#         'type': 'global' # can only be global
+#     },
+#     C20={
+#         'estimate': False,
+#         'type': 'global' # can only be global
+#     },
+#     C22={
+#         'estimate': False,
+#         'type': 'global' # can only be global
+#     }
+# )
+# parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch, arc_start_times,
+#                                            passes_times_per_link_end, Doppler_models)
+# estimation_setup.print_parameter_names(parameters_to_estimate)
+#
+#
+# # Create the estimator object
+# estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
+#
+# # Save the initial parameters values to later analyse the error
+# initial_parameters = parameters_to_estimate.parameter_vector
+# nb_parameters = len(initial_parameters)
+#
+# # Retrieve all observations
+# all_obs_times = np.array(observations_set.concatenated_times)
+# all_obs_values = observations_set.concatenated_observations
+#
+# estimation_input = estimation.EstimationInput(observations_set)
+# estimation_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
+#
+#
+# # Perform estimation_functions
+# mu_initial = bodies.get("Earth").gravity_field_model.gravitational_parameter
+#
+# nb_iterations = 10
+# nb_arcs = len(arc_start_times)
+# pod_output = run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs, nb_iterations)
+#
+# mu_updated = bodies.get("Earth").gravity_field_model.gravitational_parameter
+#
+# residuals = pod_output.residual_history
+# mean_residuals = statistics.mean(residuals[:,nb_iterations-1])
+# std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
+#
+#
+# # Retrieve updated parameters
+# updated_parameters = parameters_to_estimate.parameter_vector
+# print('initial parameter values', initial_parameters)
+# print('updated parameters', updated_parameters)
+# print('update', updated_parameters - initial_parameters)
+#
+# original_state = initial_parameters[0:6]
+# updated_state = updated_parameters[0:6]
+# print('original_state', original_state)
+# print('updated_state', updated_state)
+#
+# original_state_keplerian = element_conversion.cartesian_to_keplerian(original_state, mu_initial)
+# updated_state_keplerian = element_conversion.cartesian_to_keplerian(updated_state, mu_updated)
+# print('original_state_keplerian', original_state_keplerian)
+# print('updated_state_keplerian', updated_state_keplerian)
+# print('Diff a', updated_state_keplerian[0] - original_state_keplerian[0])
+# print('Diff e', updated_state_keplerian[1] - original_state_keplerian[1])
+# print('Diff i', (updated_state_keplerian[2] - original_state_keplerian[2]) * 180.0 / math.pi)
+# print('Diff w+true anomaly', ((updated_state_keplerian[3]+updated_state_keplerian[5]) - (original_state_keplerian[3]+original_state_keplerian[5])) * 180.0 / math.pi)
+# print('Diff RAAN', (updated_state_keplerian[4] - original_state_keplerian[4]) * 180.0 / math.pi)
+#
+# # print('real_mu', real_mu)
+# # print('initial offset mu', initial_parameters[6] - real_mu)
+# # print('final offset mu', updated_parameters[6] - real_mu)
+#
+# # new_b_star = 0.1570*ref_area_delfi*updated_parameters[12]/(2.0*mass_delfi)
+# # print('b_star', b_star_coef)
+# # print('new b_star', new_b_star)
+#
+# # Retrieve formal errors and correlations
+# formal_errors = pod_output.formal_errors
+# correlations = pod_output.correlations
+#
+# print('formal errors', formal_errors)
+#
+# # Retrieve residuals per pass
+# print('passes start times', passes_start_times)
+# print('passes end times', passes_end_times)
+# residuals_per_pass = get_residuals_per_pass(all_obs_times, residuals, passes_start_times)
+#
+# print('delta-mu', mu_updated - mu_initial)
+#
+# # Plot residuals
+# fig = plt.figure()
+# fig.tight_layout()
+# fig.subplots_adjust(hspace=0.3)
+#
+# for i in range(len(passes_start_times)):
+#     ax = fig.add_subplot(len(passes_start_times), 1, i+1)
+#     ax.plot(residuals_per_pass[i], color='blue', linestyle='-.')
+#     ax.set_xlabel('Time [s]')
+#     ax.set_ylabel('Residuals [m/s]')
+#     ax.set_title(f'Pass '+str(i+1))
+#     plt.grid()
+# plt.show()
+#
+# # Plot residuals histogram
+# fig = plt.figure()
+# ax = fig.add_subplot()
+# # plt.hist(residuals[:,1],100)
+# plt.hist(residuals[:,-1],100)
+# ax.set_xlabel('Doppler residuals')
+# ax.set_ylabel('Nb occurrences []')
+# plt.grid()
+# plt.show()
+#
+# plt.figure(figsize=(9,5))
+# plt.imshow(np.abs(pod_output.correlations), aspect='auto', interpolation='none')
+# plt.colorbar()
+# plt.tight_layout()
+# plt.show()
+#
 
 

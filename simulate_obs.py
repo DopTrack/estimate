@@ -169,18 +169,19 @@ simulated_observations = simulate_ideal_simulations(estimator, bodies, link_ends
 simulated_obs_times = np.array(simulated_observations.concatenated_times)
 simulated_doppler = simulated_observations.concatenated_observations
 
-simulated_passes_start_times, simulated_passes_end_times, obs_times_per_pass, obs_values_per_pass = divide_observations_per_pass(simulated_obs_times, simulated_doppler, obs_time_step)
+simulated_passes_start_times, simulated_passes_end_times, obs_times_per_pass, obs_values_per_pass = \
+    get_obs_per_link_end_and_pass(stations, simulated_obs_times, simulated_doppler, obs_time_step)
 
 
-print('simulated_passes_start_times', simulated_passes_start_times)
-print('nb passes', len(simulated_passes_start_times))
-
-np.savetxt('simulated_nayif_data/obs_times.txt', simulated_obs_times)
-np.savetxt('simulated_nayif_data/obs_values.txt', simulated_doppler)
-
-for k in range(len(obs_times_per_pass)):
-    np.savetxt('simulated_nayif_data/obs_times_pass' + str(k) + '.txt', obs_times_per_pass[k])
-    np.savetxt('simulated_nayif_data/obs_values_pass' + str(k) + '.txt', obs_values_per_pass[k])
+# print('simulated_passes_start_times', simulated_passes_start_times)
+# print('nb passes', len(simulated_passes_start_times))
+#
+# np.savetxt('simulated_nayif_data/obs_times.txt', simulated_obs_times)
+# np.savetxt('simulated_nayif_data/obs_values.txt', simulated_doppler)
+#
+# for k in range(len(obs_times_per_pass)):
+#     np.savetxt('simulated_nayif_data/obs_times_pass' + str(k) + '.txt', obs_times_per_pass[k])
+#     np.savetxt('simulated_nayif_data/obs_values_pass' + str(k) + '.txt', obs_values_per_pass[k])
 
 # Plot simulated Doppler data
 fig = plt.figure(figsize=(6,6), dpi=125)
