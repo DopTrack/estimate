@@ -145,15 +145,8 @@ define_station(bodies, station2, coordinates_station2)
 
 stations = [station1, station2]
 
-# Define the uplink link ends for one-way observable
-link_ends_station1 = define_link_ends(station1)
-link_ends_station1_def = get_link_end_def(link_ends_station1)
-
-link_ends_station2 = define_link_ends(station2)
-link_ends_station2_def = get_link_end_def(link_ends_station2)
-
-link_ends = [link_ends_station1, link_ends_station2]
-link_ends_def = [link_ends_station1_def, link_ends_station2_def]
+# Define all downlink link ends for Doppler
+link_ends, link_ends_def = define_all_link_ends(stations)
 
 # Define observation settings
 observation_settings = define_ideal_doppler_settings(stations)
@@ -170,10 +163,8 @@ while current_time < final_epoch:
 integrator_settings = create_integrator_settings(initial_epoch)
 estimator = create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings)
 
-
 # Simulate observations
 simulated_observations = simulate_ideal_simulations(estimator, bodies, link_ends_def, possible_obs_times, stations, 0.0)
-
 
 simulated_obs_times = np.array(simulated_observations.concatenated_times)
 simulated_doppler = simulated_observations.concatenated_observations

@@ -95,6 +95,16 @@ def get_link_end_def(link_ends):
     return observation.link_definition(link_ends)
 
 
+def define_all_link_ends(stations):
+    link_ends = []
+    link_ends_def = []
+    for k in range(len(stations)):
+        link_ends.append(define_link_ends(stations[k]))
+        link_ends_def.append(get_link_end_def(link_ends[k]))
+
+    return link_ends, link_ends_def
+
+
 def define_ideal_doppler_settings(stations):
 
     # Create observation settings for each link/observable
