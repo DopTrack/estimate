@@ -1,6 +1,6 @@
 import math
-# import sys
-# sys.path.insert(0, 'tudat-bundle/cmake-build-release/tudatpy')
+import sys
+sys.path.insert(0, 'tudat-bundle/cmake-build-release/tudatpy')
 
 # Load standard modules
 from matplotlib import pyplot as plt
@@ -29,8 +29,6 @@ j2000_days = 2451545.0
 metadata_folder = 'nayif_data/' # 'metadata/'
 data_folder = 'nayif_data/'
 
-use_new_obs_format = True
-
 # Files to be uploaded
 metadata = ['Nayif-1_42017_202101011249.yml', 'Nayif-1_42017_202101012156.yml', 'Nayif-1_42017_202101012331.yml',
             'Nayif-1_42017_202101021051.yml', 'Nayif-1_42017_202101021225.yml', 'Nayif-1_42017_202101022131.yml', 'Nayif-1_42017_202101022305.yml',
@@ -57,10 +55,13 @@ indices_files_to_load = [0, 1, 2,
 
 
 # Retrieve initial epoch and state of the first pass
-initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_folder + metadata[0])
-print('initial_epoch', initial_epoch)
-print('initial_state_teme', initial_state_teme)
-print('b_star_coef', b_star_coef)
+# initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_folder + metadata[0])
+# print('initial_epoch', initial_epoch)
+# print('initial_state_teme', initial_state_teme)
+# print('b_star_coef', b_star_coef)
+initial_epoch = 662681610.0000188
+initial_state_teme = np.array([2.24031264e6, 6.48506990e6, -1.59193504e2, 9.17424053e2, -3.25519860e2, 7.56370783e3])
+b_star_coef = 0.0001178
 start_recording_day = get_start_next_day(initial_epoch)
 
 
@@ -72,9 +73,7 @@ print('initial_epoch', initial_epoch)
 print('final_epoch', final_epoch)
 
 # Load and process observations
-passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
-    data_folder, data, indices_files_to_load, metadata, new_obs_format=use_new_obs_format)
-
+passes_start_times, passes_end_times, obs_times, obs_values = load_existing_observations(data_folder, data, indices_files_to_load, metadata, new_obs_format=True)
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
 # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
@@ -134,18 +133,30 @@ cartesian_states, keplerian_states, latitudes, longitudes, saved_accelerations =
     propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True, accelerations_to_save)
 
 
-# Create the DopTrack station
-define_doptrack_station(bodies)
-define_fake_station(bodies)
+# Create one extra station
+station1 = "FakeStation1"
+coordinates_station1 = np.array([0.0, np.deg2rad(-33.8837), np.deg2rad(151.2007)])
+define_station(bodies, station1, coordinates_station1)
 
-link_ends_dict = dict()
-link_ends_dict[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "FakeStation")
-link_ends_dict[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
-link_ends = observation.link_definition(link_ends_dict)
+# Create a second extra station
+station2 = "FakeStation2"
+coordinates_station2 = np.array([0.0, np.deg2rad(-33.8837), np.deg2rad(10.0)])
+define_station(bodies, station2, coordinates_station2)
+
+stations = [station1, station2]
+
+# Define the uplink link ends for one-way observable
+link_ends_station1 = define_link_ends(station1)
+link_ends_station1_def = get_link_end_def(link_ends_station1)
+
+link_ends_station2 = define_link_ends(station2)
+link_ends_station2_def = get_link_end_def(link_ends_station2)
+
+link_ends = [link_ends_station1, link_ends_station2]
+link_ends_def = [link_ends_station1_def, link_ends_station2_def]
 
 # Define observation settings
-observation_settings = define_ideal_doppler_settings()
-observation_settings = [observation.one_way_doppler_instantaneous(link_ends)]
+observation_settings = define_ideal_doppler_settings(stations)
 
 # Create list of observation times, with one Doppler measurement every 10 seconds
 possible_obs_times = []
@@ -155,49 +166,23 @@ while current_time < final_epoch:
     possible_obs_times.append(current_time)
     current_time = current_time + obs_time_step
 
-# Simulate (ideal) observations
-link_ends_per_obs = dict()
-link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [link_ends]
-observation_simulation_settings = observation.tabulated_simulation_settings_list(
-    link_ends_per_obs, possible_obs_times, observation.receiver)
 
 integrator_settings = create_integrator_settings(initial_epoch)
 estimator = create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings)
 
-elevation_condition = observation.elevation_angle_viability(("Earth", "FakeStation"), np.deg2rad(0))
-observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition], observation.one_way_instantaneous_doppler_type, link_ends)
 
-simulated_observations = estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
+# Simulate observations
+simulated_observations = simulate_ideal_simulations(estimator, bodies, link_ends_def, possible_obs_times, stations, 0.0)
+
 
 simulated_obs_times = np.array(simulated_observations.concatenated_times)
 simulated_doppler = simulated_observations.concatenated_observations
 
-simulated_passes_start_times = []
-simulated_passes_end_times = []
-obs_time_step = 10.0
-simulated_passes_start_times.append(simulated_obs_times[0])
-current_pass_obs_times = []
-current_pass_obs_values = []
-obs_times_per_pass = []
-obs_values_per_pass = []
-for i in range(1, len(simulated_obs_times)):
-    if (simulated_obs_times[i] - simulated_obs_times[i-1]) > (3.0 * obs_time_step):
-        simulated_passes_end_times.append(simulated_obs_times[i-1])
-        simulated_passes_start_times.append(simulated_obs_times[i])
+simulated_passes_start_times, simulated_passes_end_times, obs_times_per_pass, obs_values_per_pass = divide_observations_per_pass(simulated_obs_times, simulated_doppler, obs_time_step)
 
-        obs_times_per_pass.append(current_pass_obs_times)
-        obs_values_per_pass.append(current_pass_obs_values)
-        current_pass_obs_times = []
-        current_pass_obs_values = []
-    else:
-        current_pass_obs_times.append(simulated_obs_times[i])
-        current_pass_obs_values.append(simulated_doppler[i])
-
-obs_times_per_pass.append(current_pass_obs_times)
-obs_values_per_pass.append(current_pass_obs_values)
-simulated_passes_end_times.append(simulated_obs_times[-1])
 
 print('simulated_passes_start_times', simulated_passes_start_times)
+print('nb passes', len(simulated_passes_start_times))
 
 np.savetxt('simulated_nayif_data/obs_times.txt', simulated_obs_times)
 np.savetxt('simulated_nayif_data/obs_values.txt', simulated_doppler)

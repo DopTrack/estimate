@@ -10,6 +10,7 @@ from utility_functions.tle import get_tle_ref_time
 from tudatpy.kernel import constants
 from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 import tudatpy.kernel.numerical_simulation.estimation as tudat_estimation
+from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
 
 
 def process_observations_old(filename: str, fraction_discarded: float = 0.1) -> np.array:
@@ -96,7 +97,9 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
     obs_values = []
     for i in range(len(existing_data)):
         # obs_values.append(np.array([-existing_data[i, 1]/constants.SPEED_OF_LIGHT]))
-        obs_values.append(np.array([-existing_data[i, 1]]))
+        # obs_values.append(np.array([-existing_data[i, 1]]))
+        obs_values.append([np.array([-existing_data[i, 1]])])
+        a = np.array([-existing_data[i, 1]])
 
     # Define link ends
     link_ends = dict()
@@ -104,7 +107,8 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
     link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
 
     # Set existing observations
-    existing_observation_set = (link_ends, (obs_values, obs_times))
+    existing_observation_set = []
+    existing_observation_set.append((link_ends, (np.array(obs_values), obs_times)))
     observations_input = dict()
     observations_input[observation.one_way_instantaneous_doppler_type] = existing_observation_set
 
@@ -210,6 +214,7 @@ def merge_existing_and_simulated_obs(existing_obs_times, existing_obs_values, si
             all_simulated_obs_times = all_simulated_obs_times + simulated_obs_times_per_pass[k]
             for i in range(len(simulated_obs_values_per_pass[k])):
                 all_simulated_obs_values.append([simulated_obs_values_per_pass[k][i]])
+                a = simulated_obs_values_per_pass[k][i]
 
         existing_observation_set.append((link_ends_fake, (np.array(all_simulated_obs_values), all_simulated_obs_times)))
 
@@ -245,6 +250,52 @@ def get_observations_single_pass(single_pass_start_time, single_pass_end_time, o
         obs_array[i, 1] = selected_obs[i]
 
     return obs_array
+
+
+def simulate_ideal_simulations(estimator, bodies, link_ends_def, obs_times, stations, max_elevation):
+
+    link_ends_per_obs = dict()
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = link_ends_def
+    observation_simulation_settings = observation.tabulated_simulation_settings_list(
+        link_ends_per_obs, obs_times, observation.receiver)
+
+    for k in range(len(stations)):
+        elevation_condition = observation.elevation_angle_viability(("Earth", stations[k]), np.deg2rad(max_elevation))
+        observation.add_viability_check_to_observable_for_link_ends(
+            observation_simulation_settings, [elevation_condition], observation.one_way_instantaneous_doppler_type, link_ends_def[k])
+
+    return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
+
+
+def divide_observations_per_pass(obs_times, obs_values, obs_time_step):
+    passes_start_times = []
+    passes_end_times = []
+
+    obs_times_per_pass = []
+    obs_values_per_pass = []
+
+    current_pass_obs_times = []
+    current_pass_obs_values = []
+
+    passes_start_times.append(obs_times[0])
+    for i in range(1, len(obs_times)):
+        if (obs_times[i] - obs_times[i - 1]) > (3.0 * obs_time_step):
+            passes_end_times.append(obs_times[i - 1])
+            passes_start_times.append(obs_times[i])
+
+            obs_times_per_pass.append(current_pass_obs_times)
+            obs_values_per_pass.append(current_pass_obs_values)
+            current_pass_obs_times = []
+            current_pass_obs_values = []
+        else:
+            current_pass_obs_times.append(obs_times[i])
+            current_pass_obs_values.append(obs_values[i])
+
+    passes_end_times.append(obs_times[-1])
+    obs_times_per_pass.append(current_pass_obs_times)
+    obs_values_per_pass.append(current_pass_obs_values)
+
+    return passes_start_times, passes_end_times, obs_times_per_pass, obs_values_per_pass
 
 
 def interpolate_obs(simulated_obs, real_obs):

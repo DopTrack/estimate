@@ -3,12 +3,12 @@ import numpy as np
 import math
 import datetime
 
-# Load Doptrack modules
-from doptrack.recording import Recording
-from doptrack.astro import TLE, TLESatellite
-
-from sgp4.io import twoline2rv
-from sgp4.earth_gravity import wgs84
+# # Load Doptrack modules
+# from doptrack.recording import Recording
+# from doptrack.astro import TLE, TLESatellite
+#
+# from sgp4.io import twoline2rv
+# from sgp4.earth_gravity import wgs84
 
 from tudatpy.kernel import constants
 

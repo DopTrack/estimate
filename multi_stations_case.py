@@ -1,6 +1,6 @@
 import math
-# import sys
-# sys.path.insert(0, 'tudat-bundle/cmake-build-release/tudatpy')
+import sys
+sys.path.insert(0, 'tudat-bundle/cmake-build-release/tudatpy')
 
 # Load standard modules
 import statistics
@@ -211,7 +211,7 @@ Doppler_models = dict(
 # observation_settings = define_observation_settings(Doppler_models, passes_start_times, arc_start_times)
 observation_settings = []
 observation_settings.append(observation.one_way_open_loop_doppler(
-    define_link_ends(), bias_settings=define_biases(Doppler_models, real_passes_start_times, real_passes_start_times)))
+    define_link_ends("DopTrackStation"), bias_settings=define_biases(Doppler_models, real_passes_start_times, real_passes_start_times)))
 if (add_simulated_data == 1):
     observation_settings.append(observation.one_way_open_loop_doppler(
         fake_link_ends, bias_settings=define_biases(Doppler_models, simulated_passes_start_times, simulated_passes_start_times)))

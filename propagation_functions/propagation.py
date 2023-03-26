@@ -185,13 +185,9 @@ def define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_tim
 
     nb_arcs = len(arc_wise_initial_states)
     propagator_settings_list = []
-    # concatenated_initial_states = np.zeros(6 * nb_arcs)
     for i in range(nb_arcs):
         arc_initial_state = arc_wise_initial_states[i]
         arc_initial_time = arc_start_times[i]
-        # bodies.get("Delfi").ephemeris.cartesian_state(arc_start_times[i]) \
-        #                     - bodies.get("Earth").ephemeris.cartesian_state(arc_start_times[i])
-        # concatenated_initial_states[i * 6:(i + 1) * 6] = arc_initial_state
 
         integrator_settings = create_integrator_settings(arc_initial_time)
 

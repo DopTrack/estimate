@@ -31,31 +31,25 @@ def define_arcs(option, passes_start_times, passes_end_times):
             arc_end_times = days_end_times
 
         elif option == "per_week":
-            counter_days = 0
             arc_start_times.append(days_start_times[0])
             beginning_week = days_start_times[0]
             for i in range(1,len(days_start_times)):
                 counter_days = int( (days_start_times[i] - beginning_week)/86400)
-                # print('counter_days', counter_days)
                 if counter_days == 7:
                     arc_end_times.append(days_end_times[i-1])
                     arc_start_times.append(days_start_times[i])
-                    counter_days = 0
                     beginning_week = days_start_times[i]
 
             arc_end_times.append(days_end_times[len(days_end_times)-1])
 
         elif option == "per_3_days":
-            counter_days = 0
             arc_start_times.append(days_start_times[0])
             beginning_week = days_start_times[0]
             for i in range(1, len(days_start_times)):
                 counter_days = int((days_start_times[i] - beginning_week) / 86400)
-                # print('counter_days', counter_days)
                 if counter_days == 3:
                     arc_end_times.append(days_end_times[i - 1])
                     arc_start_times.append(days_start_times[i])
-                    counter_days = 0
                     beginning_week = days_start_times[i]
 
             arc_end_times.append(days_end_times[len(days_end_times) - 1])
@@ -68,41 +62,45 @@ def define_arcs(option, passes_start_times, passes_end_times):
 
 def define_doptrack_station(bodies):
     station_altitude = 100.0
-    delft_latitude = np.deg2rad(51.015663)#np.deg2rad(51.9899)
-    delft_longitude = np.deg2rad(4.0068216)#np.deg2rad(4.3754)
+    delft_latitude = np.deg2rad(51.015663)
+    delft_longitude = np.deg2rad(4.0068216)
 
     # Add the ground station to the environment
-    environment_setup.add_ground_station(bodies.get_body("Earth"), "DopTrackStation",
-                                         [station_altitude, delft_latitude, delft_longitude],
-                                         element_conversion.geodetic_position_type)
+    environment_setup.add_ground_station(
+        bodies.get_body("Earth"), "DopTrackStation", [station_altitude, delft_latitude, delft_longitude],
+        element_conversion.geodetic_position_type)
 
 
-def define_fake_station(bodies):
-    # Define artificial ground stations
-    station_altitude = 0.0
-    station_latitude = np.deg2rad(-33.8837)
-    station_longitude = np.deg2rad(151.2007)
+def define_station(bodies, station, coordinates):
+    station_altitude = coordinates[0] # altitude
+    station_latitude = coordinates[1] # latitude
+    station_longitude = coordinates[2] # longitude
 
-    environment_setup.add_ground_station(bodies.get_body("Earth"), "FakeStation",
+    environment_setup.add_ground_station(bodies.get_body("Earth"), station,
                                          [station_altitude, station_latitude, station_longitude],
                                          element_conversion.geodetic_position_type)
 
 
-
-def define_link_ends():
+def define_link_ends(station):
 
     # Define the uplink link ends for one-way observable
     link_ends = dict()
-    link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+    link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", station)
     link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
 
+    return link_ends
+
+
+def get_link_end_def(link_ends):
     return observation.link_definition(link_ends)
 
 
-def define_ideal_doppler_settings():
+def define_ideal_doppler_settings(stations):
 
     # Create observation settings for each link/observable
-    observation_settings = [observation.one_way_doppler_instantaneous(define_link_ends())]
+    observation_settings = []
+    for k in range(len(stations)):
+        observation_settings.append(observation.one_way_doppler_instantaneous(get_link_end_def(define_link_ends(stations[k]))))
 
     return observation_settings
 
@@ -221,7 +219,7 @@ def define_observation_settings(Doppler_models={}, passes_start_times=[], arc_st
     biases = observation.combined_bias(combined_biases)
 
     # Create observation settings for each link/observable
-    observation_settings = [observation.one_way_open_loop_doppler(define_link_ends(), bias_settings=biases)]
+    observation_settings = [observation.one_way_open_loop_doppler(define_link_ends("DopTrackStation"), bias_settings=biases)]
 
     return observation_settings
 
@@ -458,7 +456,7 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
 
 def simulate_observations(observation_times, observation_settings, propagator_settings, bodies, initial_time, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [define_link_ends()]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [define_link_ends("DopTrackStation")]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
@@ -469,21 +467,21 @@ def simulate_observations(observation_times, observation_settings, propagator_se
 
     elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition], observation.one_way_instantaneous_doppler_type,
-                                                                define_link_ends())
+                                                                define_link_ends("DopTrackStation"))
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
 
 def simulate_observations_from_estimator(observation_times, estimator, bodies, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [define_link_ends()]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [define_link_ends("DopTrackStation")]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
     elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition],
                                                                 observation.one_way_instantaneous_doppler_type,
-                                                                define_link_ends())
+                                                                define_link_ends("DopTrackStation"))
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
