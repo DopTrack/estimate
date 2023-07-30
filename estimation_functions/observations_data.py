@@ -106,8 +106,7 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
     link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
 
     # Set existing observations
-    existing_observation_set = []
-    existing_observation_set.append((link_ends, (np.array(obs_values), obs_times)))
+    existing_observation_set = (link_ends, (np.array(obs_values), obs_times))
     observations_input = dict()
     observations_input[observation.one_way_instantaneous_doppler_type] = existing_observation_set
 

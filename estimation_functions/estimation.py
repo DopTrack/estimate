@@ -466,7 +466,7 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
 
 def simulate_observations(observation_times, observation_settings, propagator_settings, bodies, initial_time, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [define_link_ends("DopTrackStation")]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_end_def(define_link_ends("DopTrackStation"))]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
@@ -536,11 +536,7 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
 # needs to be run yet)
 def create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings):
 
-    initial_states_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
-    parameter_settings = []
-    for settings in initial_states_settings:
-        parameter_settings.append(settings)
-
+    parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
     parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
     estimation_setup.print_parameter_names(parameters_to_estimate)
 

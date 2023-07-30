@@ -3,12 +3,13 @@ import numpy as np
 import math
 import datetime
 
-# # Load Doptrack modules
-# from doptrack.recording import Recording
-# from doptrack.astro import TLE, TLESatellite
-#
-# from sgp4.io import twoline2rv
-# from sgp4.earth_gravity import wgs84
+# Load Doptrack modules
+from doptrack.recording.models import Recording
+from doptrack.astro.tle import TLE
+from doptrack.astro.astro import TLESatellite
+
+from sgp4.io import twoline2rv
+from sgp4.earth_gravity import wgs84
 
 from tudatpy.kernel import constants
 
@@ -41,7 +42,7 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
 
     # Compute initial TEME state
     tle_from_meta = TLE(line1=line1_tle, line2=line2_tle)
-    delfi_tle = TLESatellite(tle=tle_from_meta)
+    delfi_tle = TLESatellite.from_tle(name="delfi",tle=tle_from_meta)
     year = int('20' + line1_tle[18:20])
     fraction_day = float(str(line1_tle[20:23]) + '.' + str(line1_tle[24:32]))
     mon, day, hr, minute, sec = days2mdhms(year, fraction_day)
@@ -54,7 +55,7 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
 
     initial_state_array = np.array(
         [state_teme.position.x, state_teme.position.y, state_teme.position.z,
-         state_teme.velocity.vx, state_teme.velocity.vy, state_teme.velocity.vz])
+         state_teme.velocity.u, state_teme.velocity.v, state_teme.velocity.w])
 
     initial_time = (julian_date - j2000_days) * 86400.0
 

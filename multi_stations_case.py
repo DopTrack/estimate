@@ -49,16 +49,16 @@ data = ['Nayif-1_42017_202101011249.csv', 'Nayif-1_42017_202101012156.csv', 'Nay
         'Nayif-1_42017_202101061220.csv', 'Nayif-1_42017_202101062300.csv']
 
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
-indices_files_to_load = [0, #2,
-                         3, 4]#,
+indices_files_to_load = [0]#, #2,
+                         # 3, 4]#,
                          # 7, 8,
                          # 10, 11, 12,
                          # 15, 17,
                          # 21]
 
-indices_simulated_data = [0, 5]
+indices_simulated_data = [0]
 
-add_simulated_data = 1
+add_simulated_data = 0
 
 
 # Retrieve initial epoch and state of the first pass
