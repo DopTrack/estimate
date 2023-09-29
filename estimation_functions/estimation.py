@@ -523,7 +523,7 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
 def create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings):
 
     parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
-    parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
+    parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies, propagator_settings, [])
     estimation_setup.print_parameter_names(parameters_to_estimate)
 
     # Create the estimator object

@@ -95,8 +95,6 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
     obs_times = existing_data[:, 0].tolist()
     obs_values = []
     for i in range(len(existing_data)):
-        # obs_values.append(np.array([-existing_data[i, 1]/constants.SPEED_OF_LIGHT]))
-        # obs_values.append(np.array([-existing_data[i, 1]]))
         obs_values.append([np.array([-existing_data[i, 1]])])
         a = np.array([-existing_data[i, 1]])
 
