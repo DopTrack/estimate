@@ -134,132 +134,11 @@ def define_observation_settings(Doppler_models={}, passes_start_times=[], arc_st
                 raise Exception('Error when setting up absolute bias, the time interval is not recognised.')
 
             biases_values = []
-            fixed_biases_values = [np.array([2.53976235e+01]), np.array([1.38098072e+01]), np.array([-3.52159444e+01]), np.array([1.06083011e+01]), np.array([2.09813996e+00]), np.array([1.50421071e+01])]
             for i in range(len(arc_wise_times)):
                 biases_values.append(np.zeros(1))
 
             if time_interval == 'per_pass' or time_interval == 'per_arc':
                 arc_wise_absolute_bias = observation.arcwise_absolute_bias(arc_wise_times, biases_values, observation.receiver)
-                # arc_wise_absolute_bias = observation.arcwise_absolute_bias(arc_wise_times, fixed_biases_values, observation.receiver)
-                combined_biases.append(arc_wise_absolute_bias)
-            else:
-                absolute_bias = observation.absolute_bias(biases_values)
-                combined_biases.append(absolute_bias)
-
-    # Define relative arc-wise biases
-    if "relative_bias" in Doppler_models:
-        if Doppler_models.get('relative_bias').get('activated'):
-            time_interval = Doppler_models.get('relative_bias').get('time_interval')
-            arc_wise_times = []
-            if time_interval == 'per_pass':
-                arc_wise_times = passes_start_times
-            elif time_interval == 'per_arc':
-                arc_wise_times = arc_start_times
-            elif time_interval == 'global':
-                arc_wise_times.append(passes_start_times[0])
-            else:
-                raise Exception('Error when setting up relative bias, the time interval is not recognised.')
-
-            biases_values = []
-            for i in range(len(arc_wise_times)):
-                biases_values.append(np.zeros(1))
-
-            if time_interval == 'per_pass' or time_interval == 'per_arc':
-                arc_wise_relative_bias = observation.arcwise_relative_bias(arc_wise_times, biases_values, observation.receiver)
-                combined_biases.append(arc_wise_relative_bias)
-            else:
-                relative_bias = observation.relative_bias(biases_values)
-                combined_biases.append(relative_bias)
-
-    # # Define arc-wise time drift biases
-    # if "time_drift" in Doppler_models:
-    #     if Doppler_models.get('time_drift').get('activated'):
-    #         time_interval = Doppler_models.get('time_drift').get('time_interval')
-    #         arc_wise_times = []
-    #         if time_interval == 'per_pass':
-    #             arc_wise_times = passes_start_times
-    #         elif time_interval == 'per_arc':
-    #             arc_wise_times = arc_start_times
-    #         elif time_interval == 'global':
-    #             arc_wise_times.append(passes_start_times[0])
-    #         else:
-    #             raise Exception('Error when setting up time drift bias, the time interval is not recognised.')
-    #
-    #         biases_values = []
-    #         fixed_biases_values = [np.array([-1.20692459e-01]), np.array([-1.34367163e-01]), np.array([-9.32475393e-02]),
-    #                                np.array([-3.32323928e-02]), np.array([-5.05055255e-02]), np.array([-1.08561619e-01])]
-    #         for i in range(len(arc_wise_times)):
-    #             biases_values.append(np.zeros(1))
-    #
-    #         if time_interval == 'per_pass' or time_interval == 'per_arc':
-    #             arc_wise_time_drift = observation.arc_wise_time_drift_bias(biases_values, arc_wise_times, observation.receiver, arc_wise_times)
-    #             # arc_wise_time_drift = observation.arc_wise_time_drift_bias(fixed_biases_values, arc_wise_times, observation.receiver, arc_wise_times)
-    #             combined_biases.append(arc_wise_time_drift)
-    #         else:
-    #             time_drift = observation.time_drift_bias(biases_values, observation.receiver, passes_start_times[0])
-    #             combined_biases.append(time_drift)
-
-
-    # Define arc-wise time biases
-    if "time_bias" in Doppler_models:
-        if Doppler_models.get('time_bias').get('activated'):
-            time_interval = Doppler_models.get('time_bias').get('time_interval')
-            arc_wise_times = []
-            if time_interval == 'per_pass':
-                arc_wise_times = passes_start_times
-            elif time_interval == 'per_arc':
-                arc_wise_times = arc_start_times
-            elif time_interval == 'global':
-                arc_wise_times.append(passes_start_times[0])
-            else:
-                raise Exception('Error when setting up time bias, the time interval is not recognised.')
-
-            biases_values = []
-            for i in range(len(arc_wise_times)):
-                biases_values.append(np.zeros(1))
-
-            if time_interval == 'per_pass' or time_interval == 'per_arc':
-                arc_wise_time_bias = observation.arc_wise_time_drift_bias(biases_values, arc_wise_times, observation.receiver, arc_wise_times)
-                combined_biases.append(arc_wise_time_bias)
-            else:
-                time_bias = observation.time_drift_bias(biases_values, observation.receiver, passes_start_times[0])
-                combined_biases.append(time_bias)
-
-    # Define all biases
-    biases = observation.combined_bias(combined_biases)
-
-    # Create observation settings for each link/observable
-    observation_settings = [observation.one_way_open_loop_doppler(define_link_ends("DopTrackStation"), bias_settings=biases)]
-
-    return observation_settings
-
-
-def define_biases(Doppler_models={}, passes_start_times=[], arc_start_times=[]):
-
-    combined_biases = []
-
-    # Define absolute arc-wise biases
-    if "absolute_bias" in Doppler_models:
-        if Doppler_models.get('absolute_bias').get('activated'):
-            time_interval = Doppler_models.get('absolute_bias').get('time_interval')
-            arc_wise_times = []
-            if time_interval == 'per_pass':
-                arc_wise_times = passes_start_times
-            elif time_interval == 'per_arc':
-                arc_wise_times = arc_start_times
-            elif time_interval == 'global':
-                arc_wise_times.append(passes_start_times[0])
-            else:
-                raise Exception('Error when setting up absolute bias, the time interval is not recognised.')
-
-            biases_values = []
-            fixed_biases_values = [np.array([2.53976235e+01]), np.array([1.38098072e+01]), np.array([-3.52159444e+01]), np.array([1.06083011e+01]), np.array([2.09813996e+00]), np.array([1.50421071e+01])]
-            for i in range(len(arc_wise_times)):
-                biases_values.append(np.zeros(1))
-
-            if time_interval == 'per_pass' or time_interval == 'per_arc':
-                arc_wise_absolute_bias = observation.arcwise_absolute_bias(arc_wise_times, biases_values, observation.receiver)
-                # arc_wise_absolute_bias = observation.arcwise_absolute_bias(arc_wise_times, fixed_biases_values, observation.receiver)
                 combined_biases.append(arc_wise_absolute_bias)
             else:
                 absolute_bias = observation.absolute_bias(biases_values)
@@ -305,14 +184,125 @@ def define_biases(Doppler_models={}, passes_start_times=[], arc_start_times=[]):
                 raise Exception('Error when setting up time drift bias, the time interval is not recognised.')
 
             biases_values = []
-            fixed_biases_values = [np.array([-1.20692459e-01]), np.array([-1.34367163e-01]), np.array([-9.32475393e-02]),
-                                   np.array([-3.32323928e-02]), np.array([-5.05055255e-02]), np.array([-1.08561619e-01])]
             for i in range(len(arc_wise_times)):
                 biases_values.append(np.zeros(1))
 
             if time_interval == 'per_pass' or time_interval == 'per_arc':
                 arc_wise_time_drift = observation.arc_wise_time_drift_bias(biases_values, arc_wise_times, observation.receiver, arc_wise_times)
-                # arc_wise_time_drift = observation.arc_wise_time_drift_bias(fixed_biases_values, arc_wise_times, observation.receiver, arc_wise_times)
+                combined_biases.append(arc_wise_time_drift)
+            else:
+                time_drift = observation.time_drift_bias(biases_values, observation.receiver, passes_start_times[0])
+                combined_biases.append(time_drift)
+
+
+    # Define arc-wise time biases
+    if "time_bias" in Doppler_models:
+        if Doppler_models.get('time_bias').get('activated'):
+            time_interval = Doppler_models.get('time_bias').get('time_interval')
+            arc_wise_times = []
+            if time_interval == 'per_pass':
+                arc_wise_times = passes_start_times
+            elif time_interval == 'per_arc':
+                arc_wise_times = arc_start_times
+            elif time_interval == 'global':
+                arc_wise_times.append(passes_start_times[0])
+            else:
+                raise Exception('Error when setting up time bias, the time interval is not recognised.')
+
+            biases_values = []
+            for i in range(len(arc_wise_times)):
+                biases_values.append(np.zeros(1))
+
+            if time_interval == 'per_pass' or time_interval == 'per_arc':
+                arc_wise_time_bias = observation.arc_wise_time_drift_bias(biases_values, arc_wise_times, observation.receiver, arc_wise_times)
+                combined_biases.append(arc_wise_time_bias)
+            else:
+                time_bias = observation.time_drift_bias(biases_values, observation.receiver, passes_start_times[0])
+                combined_biases.append(time_bias)
+
+    # Define all biases
+    biases = observation.combined_bias(combined_biases)
+
+    # Create observation settings for each link/observable
+    observation_settings = [observation.one_way_open_loop_doppler(get_link_end_def(define_link_ends("DopTrackStation")), bias_settings=biases)]
+
+    return observation_settings
+
+
+def define_biases(Doppler_models={}, passes_start_times=[], arc_start_times=[]):
+
+    combined_biases = []
+
+    # Define absolute arc-wise biases
+    if "absolute_bias" in Doppler_models:
+        if Doppler_models.get('absolute_bias').get('activated'):
+            time_interval = Doppler_models.get('absolute_bias').get('time_interval')
+            arc_wise_times = []
+            if time_interval == 'per_pass':
+                arc_wise_times = passes_start_times
+            elif time_interval == 'per_arc':
+                arc_wise_times = arc_start_times
+            elif time_interval == 'global':
+                arc_wise_times.append(passes_start_times[0])
+            else:
+                raise Exception('Error when setting up absolute bias, the time interval is not recognised.')
+
+            biases_values = []
+            for i in range(len(arc_wise_times)):
+                biases_values.append(np.zeros(1))
+
+            if time_interval == 'per_pass' or time_interval == 'per_arc':
+                arc_wise_absolute_bias = observation.arcwise_absolute_bias(arc_wise_times, biases_values, observation.receiver)
+                combined_biases.append(arc_wise_absolute_bias)
+            else:
+                absolute_bias = observation.absolute_bias(biases_values)
+                combined_biases.append(absolute_bias)
+
+    # Define relative arc-wise biases
+    if "relative_bias" in Doppler_models:
+        if Doppler_models.get('relative_bias').get('activated'):
+            time_interval = Doppler_models.get('relative_bias').get('time_interval')
+            arc_wise_times = []
+            if time_interval == 'per_pass':
+                arc_wise_times = passes_start_times
+            elif time_interval == 'per_arc':
+                arc_wise_times = arc_start_times
+            elif time_interval == 'global':
+                arc_wise_times.append(passes_start_times[0])
+            else:
+                raise Exception('Error when setting up relative bias, the time interval is not recognised.')
+
+            biases_values = []
+            for i in range(len(arc_wise_times)):
+                biases_values.append(np.zeros(1))
+
+            if time_interval == 'per_pass' or time_interval == 'per_arc':
+                arc_wise_relative_bias = observation.arcwise_relative_bias(arc_wise_times, biases_values, observation.receiver)
+                combined_biases.append(arc_wise_relative_bias)
+            else:
+                relative_bias = observation.relative_bias(biases_values)
+                combined_biases.append(relative_bias)
+
+    # Define arc-wise time drift biases
+    if "time_drift" in Doppler_models:
+        if Doppler_models.get('time_drift').get('activated'):
+            time_interval = Doppler_models.get('time_drift').get('time_interval')
+            arc_wise_times = []
+            if time_interval == 'per_pass':
+                arc_wise_times = passes_start_times
+            elif time_interval == 'per_arc':
+                arc_wise_times = arc_start_times
+            elif time_interval == 'global':
+                arc_wise_times.append(passes_start_times[0])
+            else:
+                raise Exception('Error when setting up time drift bias, the time interval is not recognised.')
+
+            biases_values = []
+            for i in range(len(arc_wise_times)):
+                biases_values.append(np.zeros(1))
+
+            if time_interval == 'per_pass' or time_interval == 'per_arc':
+                arc_wise_time_drift = observation.arc_wise_time_drift_bias(biases_values, arc_wise_times, observation.receiver, arc_wise_times)
                 combined_biases.append(arc_wise_time_drift)
             else:
                 time_drift = observation.time_drift_bias(biases_values, observation.receiver, passes_start_times[0])
@@ -459,7 +449,7 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
             else:
                 raise Exception('Error, C22 coefficient can only be estimated globally.')
 
-    parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
+    parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies, propagator_settings, [])
 
     return parameters_to_estimate
 
@@ -484,14 +474,14 @@ def simulate_observations(observation_times, observation_settings, propagator_se
 
 def simulate_observations_from_estimator(observation_times, estimator, bodies, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [define_link_ends("DopTrackStation")]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_end_def(define_link_ends("DopTrackStation"))]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
     elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition],
                                                                 observation.one_way_instantaneous_doppler_type,
-                                                                define_link_ends("DopTrackStation"))
+                                                                get_link_end_def(define_link_ends("DopTrackStation")))
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
@@ -512,10 +502,6 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
         for j in range (3):
             inv_cov[i*6+j, i*6+j] = 1.0 / (apriori_covariance_position * apriori_covariance_position)
             inv_cov[i*6+3+j, i*6+3+j] = 1.0 / (apriori_covariance_velocity * apriori_covariance_velocity)
-
-    # start_time_biases = 7
-    # for i in range(6*2):
-    #     inv_cov[start_time_biases+i, start_time_biases+i] = 1.0 / (apriori_time_bias * apriori_time_bias)
 
     # Create input object for estimation_functions, adding observations and parameter set information
     convergence_check = estimation.estimation_convergence_checker(nb_iterations)

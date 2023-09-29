@@ -194,6 +194,7 @@ nb_iterations = 10
 nb_arcs = len(arc_start_times)
 pod_output = run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs, nb_iterations)
 
+errors = pod_output.formal_errors
 residuals = pod_output.residual_history
 mean_residuals = statistics.mean(residuals[:,nb_iterations-1])
 std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
