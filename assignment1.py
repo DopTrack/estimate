@@ -1,6 +1,6 @@
 # Load standard modules
 from matplotlib import pyplot as plt
-from sklearn.linear_model import LinearRegression # linear regression module
+from sklearn.linear_model import LinearRegression  # linear regression module
 
 from propagation_functions.environment import *
 from propagation_functions.propagation import *
@@ -40,7 +40,6 @@ final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
 print('initial epoch: ', initial_epoch)
 print('initial state TEME: ', initial_state_teme)
 print('final epoch', final_epoch)
-
 
 # --------------------------------------
 # 1/ Propagate dynamics of Delfi
@@ -82,18 +81,20 @@ acceleration_models = dict(
         'point_mass_gravity': True
     }
 )
-accelerations, accelerations_to_save, accelerations_ids = create_accelerations(acceleration_models, bodies, save_accelerations=True)
+accelerations, accelerations_to_save, accelerations_ids = create_accelerations(acceleration_models, bodies,
+                                                                               save_accelerations=True)
 
 # Create propagator settings
 propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
 
 # Propagate dynamics of the Delfi satellite from initial_epoch to final_epoch, starting from initial_state
 # The propagation output is given in cartesian and keplerian states, and the latitude/longitude of the spacecraft are also saved.
-cartesian_states, keplerian_states, latitudes, longitudes, saved_accelerations =\
-    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True, accelerations_to_save)
+cartesian_states, keplerian_states, latitudes, longitudes, saved_accelerations = \
+    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True,
+                            accelerations_to_save)
 
 # Plot propagated orbit
-fig = plt.figure(figsize=(6,6), dpi=125)
+fig = plt.figure(figsize=(6, 6), dpi=125)
 ax = fig.add_subplot(111, projection='3d')
 ax.set_title(f'Delfi-C3 trajectory around Earth')
 ax.plot(cartesian_states[:, 1], cartesian_states[:, 2], cartesian_states[:, 3], label='Delfi-C3', linestyle='-.')
@@ -104,20 +105,19 @@ ax.set_ylabel('y [m]')
 ax.set_zlabel('z [m]')
 plt.show()
 
-
 # Plot accelerations exerted on Delfi
 fig = plt.figure()
 ax = fig.add_subplot()
 ax.set_title(f'Accelerations on Delfi')
-for i in range(np.shape(saved_accelerations)[1]-1):
-    ax.plot((saved_accelerations[:, 0]-start_recording_day)/86400, saved_accelerations[:, i+1], label=accelerations_ids[i], linestyle='-')
+for i in range(np.shape(saved_accelerations)[1] - 1):
+    ax.plot((saved_accelerations[:, 0] - start_recording_day) / 86400, saved_accelerations[:, i + 1],
+            label=accelerations_ids[i], linestyle='-')
 ax.legend()
 ax.set_xlabel('Time [Days since first recording day]')
 ax.set_ylabel('Acceleration [m/s]')
 plt.yscale('log')
 plt.grid()
 plt.show()
-
 
 # --------------------------------------
 # 2/ Detect passes and simulate Doppler
@@ -127,7 +127,7 @@ plt.show()
 define_doptrack_station(bodies)
 
 # Define observation settings
-observation_settings = define_ideal_doppler_settings()
+observation_settings = define_ideal_doppler_settings(["DopTrackStation"])
 
 # Create list of observation times, with one Doppler measurement every 10 seconds
 possible_obs_times = []
@@ -189,7 +189,7 @@ plt.show()
 # --------------------------------------
 
 # Index of the *recorded* pass of interest (warning: the number of recorded passes might differ from the number of simulated passes)
-index_pass = 0
+index_pass = 1
 single_pass_start_time = passes_start_times[index_pass]
 single_pass_end_time = passes_end_times[index_pass]
 
@@ -251,5 +251,3 @@ ax4.set_xlabel('Time [hours since start of day]')
 ax4.set_ylabel('Residual [m/s]')
 
 plt.show()
-
-

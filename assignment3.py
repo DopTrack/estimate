@@ -1,5 +1,10 @@
+import math
+# import sys
+# sys.path.insert(0, 'tudat-bundle/cmake-build-release/tudatpy')
+
 # Load standard modules
 import statistics
+
 # Uncomment the following to make plots interactive
 # %matplotlib widget
 from matplotlib import pyplot as plt
@@ -11,7 +16,6 @@ from estimation_functions.observations_data import *
 
 from utility_functions.time import *
 from utility_functions.tle import *
-from utility_functions.data import extract_tar
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -20,29 +24,53 @@ from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.numerical_simulation import estimation_setup
 from tudatpy.kernel.astro import element_conversion
+from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 
 j2000_days = 2451545.0
-
-# Extract data
-# extract_tar("./metadata.tar.xz")
-# extract_tar("./data.tar.xz")
 
 # Define import folder
 metadata_folder = 'nayif_data/' # 'metadata/'
 data_folder = 'nayif_data/'
 
 # Files to be uploaded
-metadata = ['Nayif-1_42017_202101011249.yml', 'Nayif-1_42017_202101021051.yml']
+metadata = ['Nayif-1_42017_202101011249.yml', 'Nayif-1_42017_202101012156.yml', 'Nayif-1_42017_202101012331.yml',
+            'Nayif-1_42017_202101021051.yml', 'Nayif-1_42017_202101021225.yml', 'Nayif-1_42017_202101022131.yml', 'Nayif-1_42017_202101022305.yml',
+            'Nayif-1_42017_202101031026.yml', 'Nayif-1_42017_202101031200.yml', 'Nayif-1_42017_202101032240.yml',
+            'Nayif-1_42017_202101041002.yml', 'Nayif-1_42017_202101041135.yml', 'Nayif-1_42017_202101041309.yml', 'Nayif-1_42017_202101042043.yml', 'Nayif-1_42017_202101042215.yml',
+            'Nayif-1_42017_202101050938.yml', 'Nayif-1_42017_202101051110.yml', 'Nayif-1_42017_202101051244.yml', 'Nayif-1_42017_202101052020.yml', 'Nayif-1_42017_202101052151.yml', 'Nayif-1_42017_202101052326.yml',
+            'Nayif-1_42017_202101061220.yml', 'Nayif-1_42017_202101062300.yml']
 
-data = ['Nayif-1_42017_202101011249.csv', 'Nayif-1_42017_202101021051.csv']
+data = ['Nayif-1_42017_202101011249.csv', 'Nayif-1_42017_202101012156.csv', 'Nayif-1_42017_202101012331.csv',
+        'Nayif-1_42017_202101021051.csv', 'Nayif-1_42017_202101021225.csv', 'Nayif-1_42017_202101022131.csv', 'Nayif-1_42017_202101022305.csv',
+        'Nayif-1_42017_202101031026.csv', 'Nayif-1_42017_202101031200.csv', 'Nayif-1_42017_202101032240.csv',
+        'Nayif-1_42017_202101041002.csv', 'Nayif-1_42017_202101041135.csv', 'Nayif-1_42017_202101041309.csv', 'Nayif-1_42017_202101042043.csv', 'Nayif-1_42017_202101042215.csv',
+        'Nayif-1_42017_202101050938.csv', 'Nayif-1_42017_202101051110.csv', 'Nayif-1_42017_202101051244.csv', 'Nayif-1_42017_202101052020.csv', 'Nayif-1_42017_202101052151.csv', 'Nayif-1_42017_202101052326.csv',
+        'Nayif-1_42017_202101061220.csv', 'Nayif-1_42017_202101062300.csv']
 
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
-indices_files_to_load = [0, 1]
-# indices_files_to_load = [0, 1, 3, 4, 5, 6, 9, 10, 11, 12]
+# indices_files_to_load = [0, 2,
+#                          3, 4,
+#                          7, 8,
+#                          10, 11, 12,
+#                          15, 17,
+#                          21]
+
+indices_files_to_load = [0,
+                         4, 7]#,
+                         # 7, 8,
+                         # 10, 11, 12,
+                         # 15, 17,
+                         # 21]
 
 
 # Retrieve initial epoch and state of the first pass
-initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_folder + metadata[0])
+# initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_folder + metadata[0])
+# print('initial_epoch', initial_epoch)
+# print('initial_state_teme', initial_state_teme)
+# print('b_star_coef', b_star_coef)
+initial_epoch = 662681610.0000188
+initial_state_teme = np.array([2.24031264e6, 6.48506990e6, -1.59193504e2, 9.17424053e2, -3.25519860e2, 7.56370783e3])
+b_star_coef = 0.0001178
 start_recording_day = get_start_next_day(initial_epoch)
 
 
@@ -60,10 +88,13 @@ passes_start_times, passes_end_times, observation_times, observations_set = load
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
 # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
-arc_start_times, arc_end_times = define_arcs('per_day', passes_start_times, passes_end_times)
+arc_start_times, arc_end_times = define_arcs('per_3_days', passes_start_times, passes_end_times)
 
 print('arc_start_times', arc_start_times)
 print('arc_end_times', arc_end_times)
+
+print('passes_start_times', passes_start_times)
+print('passes_end_times', passes_end_times)
 
 
 # Define propagation_functions environment
@@ -114,6 +145,9 @@ arc_wise_initial_states = get_initial_states(bodies, arc_start_times)
 bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=True)
 accelerations, dummy_output_1, dummy_output_2 = create_accelerations(acceleration_models, bodies)
 
+real_mu = bodies.get("Earth").gravity_field_model.gravitational_parameter
+bodies.get("Earth").gravity_field_model.gravitational_parameter = 1.0 * bodies.get("Earth").gravity_field_model.gravitational_parameter
+
 # Define multi-arc propagator settings
 multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations)
 
@@ -134,6 +168,10 @@ Doppler_models = dict(
         'activated': True,
         'time_interval': bias_definition
     },
+    time_drift={
+        'activated': True,
+        'time_interval': bias_definition
+    },
     time_bias={
         'activated': True,
         'time_interval': bias_definition
@@ -150,10 +188,13 @@ parameters_list = dict(
         'estimate': True
     },
     relative_bias={
+        'estimate': False
+    },
+    time_drift={
         'estimate': True
     },
     time_bias={
-        'estimate': True
+        'estimate': False
     },
     drag_coefficient={
         'estimate': False,
@@ -164,11 +205,11 @@ parameters_list = dict(
         'type': 'per_arc'
     },
     gravitational_parameter={
-        'estimate': False,
+        'estimate': True,
         'type': 'global' # can only be global
     },
     C20={
-        'estimate': False,
+        'estimate': True,
         'type': 'global' # can only be global
     },
     C22={
@@ -176,8 +217,13 @@ parameters_list = dict(
         'type': 'global' # can only be global
     }
 )
+
+link_ends = dict()
+link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+
 parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
-                                           arc_start_times, passes_start_times, Doppler_models)
+                                           arc_start_times, [(link_ends, passes_start_times)], Doppler_models)
 estimation_setup.print_parameter_names(parameters_to_estimate)
 
 
@@ -206,6 +252,26 @@ std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
 updated_parameters = parameters_to_estimate.parameter_vector
 print('initial parameter values', initial_parameters)
 print('updated parameters', updated_parameters)
+print('update', updated_parameters - initial_parameters)
+
+original_state = initial_parameters[0:6]
+updated_state = updated_parameters[0:6]
+print('original_state', original_state)
+print('updated_state', updated_state)
+
+original_state_keplerian = element_conversion.cartesian_to_keplerian(original_state, bodies.get("Earth").gravity_field_model.gravitational_parameter)
+updated_state_keplerian = element_conversion.cartesian_to_keplerian(updated_state, bodies.get("Earth").gravity_field_model.gravitational_parameter)
+print('original_state_keplerian', original_state_keplerian)
+print('updated_state_keplerian', updated_state_keplerian)
+print('Diff a', updated_state_keplerian[0] - original_state_keplerian[0])
+print('Diff e', updated_state_keplerian[1] - original_state_keplerian[1])
+print('Diff i', (updated_state_keplerian[2] - original_state_keplerian[2]) * 180.0 / math.pi)
+print('Diff w+true anomaly', ((updated_state_keplerian[3]+updated_state_keplerian[5]) - (original_state_keplerian[3]+original_state_keplerian[5])) * 180.0 / math.pi)
+print('Diff RAAN', (updated_state_keplerian[4] - original_state_keplerian[4]) * 180.0 / math.pi)
+
+# print('real_mu', real_mu)
+# print('initial offset mu', initial_parameters[6] - real_mu)
+# print('final offset mu', updated_parameters[6] - real_mu)
 
 # new_b_star = 0.1570*ref_area_delfi*updated_parameters[12]/(2.0*mass_delfi)
 # print('b_star', b_star_coef)
@@ -233,5 +299,22 @@ for i in range(len(passes_start_times)):
     ax.set_title(f'Pass '+str(i+1))
     plt.grid()
 plt.show()
+
+# Plot residuals histogram
+fig = plt.figure()
+ax = fig.add_subplot()
+# plt.hist(residuals[:,1],100)
+plt.hist(residuals[:,-1],100)
+ax.set_xlabel('Doppler residuals')
+ax.set_ylabel('Nb occurrences []')
+plt.grid()
+plt.show()
+
+plt.figure(figsize=(9,5))
+plt.imshow(np.abs(pod_output.correlations), aspect='auto', interpolation='none')
+plt.colorbar()
+plt.tight_layout()
+plt.show()
+
 
 

@@ -3,9 +3,10 @@ import numpy as np
 import math
 import datetime
 
-# # Load Doptrack modules
-from doptrack.recording import Recording
-from doptrack.astro import TLE, TLESatellite
+# Load Doptrack modules
+from doptrack.recording.models import Recording
+from doptrack.astro.tle import TLE
+from doptrack.astro.astro import TLESatellite
 
 from sgp4.io import twoline2rv
 from sgp4.earth_gravity import wgs84
@@ -25,9 +26,6 @@ def get_tle_ref_time(filename: str) -> [float, np.ndarray]:
     rx_time = metadata['Sat']['uhd']['rx_time']
     julian_date_time_pps = jday(time_pps.year, int(time_pps.month), int(time_pps.day), int(time_pps.hour), int(time_pps.minute), int(time_pps.second))
     time_pps = (julian_date_time_pps - j2000_days) * 86400.0
-    print('time_pps', time_pps)
-    print('rx_time', rx_time)
-    print('converted time_pps', time_pps)
 
     return time_pps+rx_time
 
@@ -41,43 +39,27 @@ def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
     line1_tle = recording.meta.satellite.tle.line1
     line2_tle = recording.meta.satellite.tle.line2
 
-    # with open(filename, 'r') as metafile:
-    #     metadata = yaml.load(metafile, Loader=yaml.FullLoader)
-    # time_pps = metadata['Sat']['Record']['time pps']
-    # rx_time = metadata['Sat']['uhd']['rx_time']
-    # julian_date_time_pps = jday(time_pps.year, int(time_pps.month), int(time_pps.day), int(time_pps.hour), int(time_pps.minute), int(time_pps.second))
-    # time_pps = (julian_date_time_pps - j2000_days) * 86400.0
-    # print('time_pps', time_pps)
-    # print('rx_time', rx_time)
-    # print('converted time_pps', time_pps)
-
 
     # Compute initial TEME state
     tle_from_meta = TLE(line1=line1_tle, line2=line2_tle)
-    # delfi_tle = TLESatellite(name='delfi', noradid=32789, tle=tle_from_meta)
-    delfi_tle = TLESatellite(tle=tle_from_meta)
+    delfi_tle = TLESatellite.from_tle(name="delfi",tle=tle_from_meta)
     year = int('20' + line1_tle[18:20])
-    day = line1_tle[20:32]
     fraction_day = float(str(line1_tle[20:23]) + '.' + str(line1_tle[24:32]))
-    # print('year', year, 'day', day, 'fraction_day', fraction_day)
     mon, day, hr, minute, sec = days2mdhms(year, fraction_day)
-    # print(year,'-',mon,'-',day,' ', hr,':',minute,':',sec)
 
     tle_time = datetime.datetime(year, int(mon), int(day), int(hr), int(minute), int(sec))
-    # print('time TLE', tle_time)
     state_teme = delfi_tle.state_teme(tle_time)
 
     # Compute initial Julian date
     julian_date = jday(year, int(mon), int(day), int(hr), int(minute), int(sec))
-    # print('julian date', julian_date)
 
     initial_state_array = np.array(
         [state_teme.position.x, state_teme.position.y, state_teme.position.z,
-         state_teme.velocity.vx, state_teme.velocity.vy, state_teme.velocity.vz])
+         state_teme.velocity.u, state_teme.velocity.v, state_teme.velocity.w])
 
     initial_time = (julian_date - j2000_days) * 86400.0
 
     sat = twoline2rv(line1_tle, line2_tle, wgs84)
     b_star = sat.bstar
 
-    return initial_time, initial_state_array, b_star #, (time_pps+rx_time)
+    return initial_time, initial_state_array, b_star
