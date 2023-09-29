@@ -477,7 +477,7 @@ def simulate_observations(observation_times, observation_settings, propagator_se
 
     elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition], observation.one_way_instantaneous_doppler_type,
-                                                                define_link_ends("DopTrackStation"))
+                                                                get_link_end_def(define_link_ends("DopTrackStation")))
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
