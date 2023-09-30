@@ -137,16 +137,15 @@ acceleration_models = dict(
         'point_mass_gravity': True
     }
 )
-accelerations, dummy_output_1, dummy_output_2 = create_accelerations(acceleration_models, bodies)
 
 # Propagate dynamics and retrieve Delfi's initial state at the start of each arc
-orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
+orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, acceleration_models)
 arc_wise_initial_states = get_initial_states(bodies, arc_start_times)
 
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
 bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=True)
-accelerations, dummy_output_1, dummy_output_2 = create_accelerations(acceleration_models, bodies)
+accelerations = create_accelerations(acceleration_models, bodies)
 
 real_mu = bodies.get("Earth").gravity_field_model.gravitational_parameter
 bodies.get("Earth").gravity_field_model.gravitational_parameter = 1.0 * bodies.get("Earth").gravity_field_model.gravitational_parameter

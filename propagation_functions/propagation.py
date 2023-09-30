@@ -11,89 +11,49 @@ from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.util import result2array
 
 
-def create_accelerations(acceleration_models, bodies, save_accelerations=False):
+def create_accelerations(acceleration_models, bodies):
     # Define bodies that are propagated
     bodies_to_propagate = ["Delfi"]
 
     # Define central bodies of propagation_functions
     central_bodies = ["Earth"]
 
-    # Define dependent variables for all accelerations if necessary
-    dependent_variables = []
-    accelerations_ids = []
-
     # Define the accelerations acting on Delfi
     accelerations_due_to_sun = []
     if "Sun" in acceleration_models:
         if acceleration_models['Sun']["point_mass_gravity"]:
             accelerations_due_to_sun.append(propagation_setup.acceleration.point_mass_gravity())
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Sun"))
-                accelerations_ids.append("point mass gravity Sun")
         if acceleration_models['Sun']["solar_radiation_pressure"]:
             accelerations_due_to_sun.append(propagation_setup.acceleration.cannonball_radiation_pressure())
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.cannonball_radiation_pressure_type, "Delfi", "Sun"))
-                accelerations_ids.append("solar radiation pressure Sun")
 
     accelerations_due_to_moon = []
     if "Moon" in acceleration_models:
         if acceleration_models['Moon']["point_mass_gravity"]:
             accelerations_due_to_moon.append(propagation_setup.acceleration.point_mass_gravity())
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Moon"))
-                accelerations_ids.append("point mass gravity Moon")
 
     accelerations_due_to_earth = []
     if "Earth" in acceleration_models:
         if acceleration_models['Earth']["point_mass_gravity"]:
             accelerations_due_to_earth.append(propagation_setup.acceleration.point_mass_gravity())
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Earth"))
-                accelerations_ids.append("point mass gravity Earth")
         if acceleration_models['Earth']["spherical_harmonic_gravity"]:
             accelerations_due_to_earth.append(propagation_setup.acceleration.spherical_harmonic_gravity(2, 2))
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.spherical_harmonic_gravity_type, "Delfi", "Earth"))
-                accelerations_ids.append("spherical harmonics gravity Earth")
         if acceleration_models['Earth']["drag"]:
             accelerations_due_to_earth.append(propagation_setup.acceleration.aerodynamic())
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.aerodynamic_type, "Delfi", "Earth"))
-                accelerations_ids.append("drag Earth")
 
     accelerations_due_to_venus = []
     if "Venus" in acceleration_models:
         if acceleration_models['Venus']["point_mass_gravity"]:
             accelerations_due_to_venus.append(propagation_setup.acceleration.point_mass_gravity())
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Venus"))
-                accelerations_ids.append("point mass gravity Venus")
 
     accelerations_due_to_mars = []
     if "Mars" in acceleration_models:
         if acceleration_models['Mars']["point_mass_gravity"]:
             accelerations_due_to_mars.append(propagation_setup.acceleration.point_mass_gravity())
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Mars"))
-                accelerations_ids.append("point mass gravity Mars")
 
     accelerations_due_to_jupiter = []
     if "Jupiter" in acceleration_models:
         if acceleration_models['Jupiter']["point_mass_gravity"]:
             accelerations_due_to_jupiter.append(propagation_setup.acceleration.point_mass_gravity())
-            if save_accelerations:
-                dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                    propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Jupiter"))
-                accelerations_ids.append("point mass gravity Jupiter")
 
     accelerations_settings_delfi = dict(
         Sun=accelerations_due_to_sun,
@@ -107,8 +67,64 @@ def create_accelerations(acceleration_models, bodies, save_accelerations=False):
     # Create global accelerations dictionary
     acceleration_settings = {"Delfi": accelerations_settings_delfi}
 
-    return propagation_setup.create_acceleration_models(bodies, acceleration_settings, bodies_to_propagate,
-                                                        central_bodies), dependent_variables, accelerations_ids
+    return propagation_setup.create_acceleration_models(bodies, acceleration_settings, bodies_to_propagate, central_bodies)
+
+
+def retrieve_accelerations_to_save(acceleration_models):
+
+    dependent_variables = []
+    accelerations_ids = []
+
+    # Check accelerations acting on Delfi
+    if "Sun" in acceleration_models:
+        if acceleration_models['Sun']["point_mass_gravity"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Sun"))
+            accelerations_ids.append("point mass gravity Sun")
+        if acceleration_models['Sun']["solar_radiation_pressure"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.cannonball_radiation_pressure_type, "Delfi", "Sun"))
+            accelerations_ids.append("solar radiation pressure Sun")
+
+    if "Moon" in acceleration_models:
+        if acceleration_models['Moon']["point_mass_gravity"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Moon"))
+            accelerations_ids.append("point mass gravity Moon")
+
+    if "Earth" in acceleration_models:
+        if acceleration_models['Earth']["point_mass_gravity"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Earth"))
+            accelerations_ids.append("point mass gravity Earth")
+        if acceleration_models['Earth']["spherical_harmonic_gravity"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.spherical_harmonic_gravity_type, "Delfi", "Earth"))
+            accelerations_ids.append("spherical harmonics gravity Earth")
+        if acceleration_models['Earth']["drag"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.aerodynamic_type, "Delfi", "Earth"))
+            accelerations_ids.append("drag Earth")
+
+    if "Venus" in acceleration_models:
+        if acceleration_models['Venus']["point_mass_gravity"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Venus"))
+            accelerations_ids.append("point mass gravity Venus")
+
+    if "Mars" in acceleration_models:
+        if acceleration_models['Mars']["point_mass_gravity"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Mars"))
+            accelerations_ids.append("point mass gravity Mars")
+
+    if "Jupiter" in acceleration_models:
+        if acceleration_models['Jupiter']["point_mass_gravity"]:
+            dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
+                propagation_setup.acceleration.point_mass_gravity_type, "Delfi", "Jupiter"))
+            accelerations_ids.append("point mass gravity Jupiter")
+
+    return dependent_variables, accelerations_ids
 
 
 def create_integrator_settings(initial_time, time_step: float = 10.0):
@@ -144,7 +160,13 @@ def create_propagator_settings(initial_state, initial_time, final_time, accelera
         termination_condition, output_variables=dependent_variables)
 
 
-def propagate_initial_state(initial_state, initial_time, final_time, bodies, accelerations, save_accelerations=False, accelerations_to_save=[]):
+def propagate_initial_state(initial_state, initial_time, final_time, bodies, acceleration_models, save_accelerations=False):
+
+    # Create accelerations
+    accelerations = create_accelerations(acceleration_models, bodies)
+    accelerations_to_save = []
+    if save_accelerations:
+        accelerations_to_save, accelerations_ids = retrieve_accelerations_to_save(acceleration_models)
 
     # Create numerical integrator settings
     integrator_settings = create_integrator_settings(initial_time)
@@ -154,7 +176,6 @@ def propagate_initial_state(initial_state, initial_time, final_time, bodies, acc
 
     # Propagate dynamics
     simulator = numerical_simulation.SingleArcSimulator(bodies, integrator_settings, single_arc_propagator_settings, 1, 0, 1)
-    # simulator = numerical_simulation.create_dynamics_simulator(bodies, single_arc_propagator_settings, 1)
 
     cartesian_states = result2array(simulator.state_history)
     dependent_variables = result2array(simulator.dependent_variable_history)

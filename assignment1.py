@@ -81,17 +81,17 @@ acceleration_models = dict(
         'point_mass_gravity': True
     }
 )
-accelerations, accelerations_to_save, accelerations_ids = create_accelerations(acceleration_models, bodies,
-                                                                               save_accelerations=True)
-
-# Create propagator settings
-propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
 
 # Propagate dynamics of the Delfi satellite from initial_epoch to final_epoch, starting from initial_state
 # The propagation output is given in cartesian and keplerian states, and the latitude/longitude of the spacecraft are also saved.
 cartesian_states, keplerian_states, latitudes, longitudes, saved_accelerations = \
-    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True,
-                            accelerations_to_save)
+    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, acceleration_models, True)
+
+# Create propagator settings
+accelerations = create_accelerations(acceleration_models, bodies)
+accelerations_to_save, accelerations_ids = retrieve_accelerations_to_save(acceleration_models)
+propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
+
 
 # Plot propagated orbit
 fig = plt.figure(figsize=(6, 6), dpi=125)
