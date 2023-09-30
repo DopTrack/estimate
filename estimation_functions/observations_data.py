@@ -1,13 +1,9 @@
 # Load standard modules
 import numpy as np
 from scipy.interpolate import interp1d  # interpolation function
-
-from estimation_functions.estimation import define_link_ends
 from utility_functions.time import jday
-from utility_functions.tle import get_tle_ref_time
 
 # Load tudatpy modules
-from tudatpy.kernel import constants
 from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 import tudatpy.kernel.numerical_simulation.estimation as tudat_estimation
 from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
@@ -144,83 +140,79 @@ def load_existing_observations(data_folder, data, recording_start_times, new_obs
     return passes_start_times, passes_end_times, obs_times, obs_values
 
 
-def load_simulated_observations(data_folder, indices_simulated_data):
-    nb_passes = len(indices_simulated_data)
-
-    obs_times_per_pass = []
-    obs_values_per_pass = []
-    passes_start_times = []
-    passes_end_times = []
-
-    for i in range(nb_passes):
-
-        obs_times = []
-        obs_values = []
-
-        f = open(data_folder + 'obs_times_pass' + str(indices_simulated_data[i]) + '.txt', 'r')
-        lines = f.readlines()
-        for line in lines:
-            result = line.strip().split(',')
-            obs_times.append(float(result[0]))
-        f.close()
-
-        f = open(data_folder + 'obs_values_pass' + str(indices_simulated_data[i]) + '.txt', 'r')
-        lines = f.readlines()
-        for line in lines:
-            result = line.strip().split(',')
-            obs_values.append(np.array([float(result[0])]))
-        f.close()
-
-        passes_start_times.append(obs_times[0] - 10.0)
-        passes_end_times.append(obs_times[-1] + 10.0)
-
-        obs_times_per_pass.append(obs_times)
-        obs_values_per_pass.append(obs_values)
-
-    return passes_start_times, passes_end_times, obs_times_per_pass, obs_values_per_pass
-
-
-def merge_existing_and_simulated_obs(stations_real, stations_fake, existing_obs_times, existing_obs_values,
-                                     simulated_obs_times_per_pass_and_link_end, simulated_obs_values_per_pass_and_link_end):
-    # Define link ends
-    link_ends_real = []
-    for k in range(len(stations_real)):
-        link_ends_real.append(define_link_ends(stations_real[k]))
-
-    # Define fake link ends
-    link_ends_fake = []
-    for k in range(len(stations_fake)):
-        link_ends_fake.append(define_link_ends(stations_fake[k]))
-
-    obs_set = []
-    # Set existing observations
-    for j in range(len(stations_real)):
-        obs_set.append((link_ends_real[j], (existing_obs_values[stations_real[j]], existing_obs_times[stations_real[j]])))
-
-    # Set simulated observations
-    for j in range(len(stations_fake)):
-
-        simulated_obs_times_per_pass = simulated_obs_times_per_pass_and_link_end[stations_fake[j]]
-        simulated_obs_values_per_pass = simulated_obs_values_per_pass_and_link_end[stations_fake[j]]
-
-        all_simulated_obs_times = []
-        all_simulated_obs_values = []
-
-        for k in range(len(simulated_obs_times_per_pass)):
-            all_simulated_obs_times = all_simulated_obs_times + simulated_obs_times_per_pass[k]
-            for i in range(len(simulated_obs_values_per_pass[k])):
-                all_simulated_obs_values.append([simulated_obs_values_per_pass[k][i]])
-
-        obs_set.append((link_ends_fake[j], (np.array(all_simulated_obs_values), all_simulated_obs_times)))
-
-    observations_input = {observation.one_way_instantaneous_doppler_type: obs_set}
-    observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
-
-    return observations_set
+# def load_simulated_observations(data_folder, indices_simulated_data):
+#     nb_passes = len(indices_simulated_data)
+#
+#     obs_times_per_pass = []
+#     obs_values_per_pass = []
+#     passes_start_times = []
+#     passes_end_times = []
+#
+#     for i in range(nb_passes):
+#
+#         obs_times = []
+#         obs_values = []
+#
+#         f = open(data_folder + 'obs_times_pass' + str(indices_simulated_data[i]) + '.txt', 'r')
+#         lines = f.readlines()
+#         for line in lines:
+#             result = line.strip().split(',')
+#             obs_times.append(float(result[0]))
+#         f.close()
+#
+#         f = open(data_folder + 'obs_values_pass' + str(indices_simulated_data[i]) + '.txt', 'r')
+#         lines = f.readlines()
+#         for line in lines:
+#             result = line.strip().split(',')
+#             obs_values.append(np.array([float(result[0])]))
+#         f.close()
+#
+#         passes_start_times.append(obs_times[0] - 10.0)
+#         passes_end_times.append(obs_times[-1] + 10.0)
+#
+#         obs_times_per_pass.append(obs_times)
+#         obs_values_per_pass.append(obs_values)
+#
+#     return passes_start_times, passes_end_times, obs_times_per_pass, obs_values_per_pass
 
 
-def convert_frequencies_to_range_rate(frequencies):
-    return frequencies  # * constants.SPEED_OF_LIGHT
+# def merge_existing_and_simulated_obs(stations_real, stations_fake, existing_obs_times, existing_obs_values,
+#                                      simulated_obs_times_per_pass_and_link_end, simulated_obs_values_per_pass_and_link_end):
+#     # Define link ends
+#     link_ends_real = []
+#     for k in range(len(stations_real)):
+#         link_ends_real.append(define_link_ends(stations_real[k]))
+#
+#     # Define fake link ends
+#     link_ends_fake = []
+#     for k in range(len(stations_fake)):
+#         link_ends_fake.append(define_link_ends(stations_fake[k]))
+#
+#     obs_set = []
+#     # Set existing observations
+#     for j in range(len(stations_real)):
+#         obs_set.append((link_ends_real[j], (existing_obs_values[stations_real[j]], existing_obs_times[stations_real[j]])))
+#
+#     # Set simulated observations
+#     for j in range(len(stations_fake)):
+#
+#         simulated_obs_times_per_pass = simulated_obs_times_per_pass_and_link_end[stations_fake[j]]
+#         simulated_obs_values_per_pass = simulated_obs_values_per_pass_and_link_end[stations_fake[j]]
+#
+#         all_simulated_obs_times = []
+#         all_simulated_obs_values = []
+#
+#         for k in range(len(simulated_obs_times_per_pass)):
+#             all_simulated_obs_times = all_simulated_obs_times + simulated_obs_times_per_pass[k]
+#             for i in range(len(simulated_obs_values_per_pass[k])):
+#                 all_simulated_obs_values.append([simulated_obs_values_per_pass[k][i]])
+#
+#         obs_set.append((link_ends_fake[j], (np.array(all_simulated_obs_values), all_simulated_obs_times)))
+#
+#     observations_input = {observation.one_way_instantaneous_doppler_type: obs_set}
+#     observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
+#
+#     return observations_set
 
 
 def get_observations_single_pass(single_pass_start_time, single_pass_end_time, observations_set):

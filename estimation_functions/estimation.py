@@ -81,7 +81,7 @@ def define_station(bodies, station, coordinates):
                                          element_conversion.geodetic_position_type)
 
 
-def define_link_ends(station):
+def get_link_ends_id(station):
 
     # Define the uplink link ends for one-way observable
     link_ends = dict()
@@ -91,16 +91,16 @@ def define_link_ends(station):
     return link_ends
 
 
-def get_link_end_def(link_ends):
-    return observation.link_definition(link_ends)
+def get_link_ends(station):
+    return observation.link_definition(get_link_ends_id(station))
 
 
 def define_all_link_ends(stations):
     link_ends = []
     link_ends_def = []
     for k in range(len(stations)):
-        link_ends.append(define_link_ends(stations[k]))
-        link_ends_def.append(get_link_end_def(link_ends[k]))
+        link_ends.append(get_link_ends_id(stations[k]))
+        link_ends_def.append(get_link_ends(link_ends[k]))
 
     return link_ends, link_ends_def
 
@@ -110,7 +110,7 @@ def define_ideal_doppler_settings(stations):
     # Create observation settings for each link/observable
     observation_settings = []
     for k in range(len(stations)):
-        observation_settings.append(observation.one_way_doppler_instantaneous(get_link_end_def(define_link_ends(stations[k]))))
+        observation_settings.append(observation.one_way_doppler_instantaneous(get_link_ends(stations[k])))
 
     return observation_settings
 
@@ -224,7 +224,7 @@ def define_observation_settings(Doppler_models={}, passes_start_times=[], arc_st
     biases = observation.combined_bias(combined_biases)
 
     # Create observation settings for each link/observable
-    observation_settings = [observation.one_way_open_loop_doppler(get_link_end_def(define_link_ends("DopTrackStation")), bias_settings=biases)]
+    observation_settings = [observation.one_way_open_loop_doppler(get_link_ends("DopTrackStation"), bias_settings=biases)]
 
     return observation_settings
 
@@ -456,7 +456,7 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
 
 def simulate_observations(observation_times, observation_settings, propagator_settings, bodies, initial_time, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_end_def(define_link_ends("DopTrackStation"))]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_ends("DopTrackStation")]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
@@ -467,21 +467,21 @@ def simulate_observations(observation_times, observation_settings, propagator_se
 
     elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition], observation.one_way_instantaneous_doppler_type,
-                                                                get_link_end_def(define_link_ends("DopTrackStation")))
+                                                                get_link_ends("DopTrackStation"))
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
 
 def simulate_observations_from_estimator(observation_times, estimator, bodies, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_end_def(define_link_ends("DopTrackStation"))]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_ends("DopTrackStation")]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
     elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition],
                                                                 observation.one_way_instantaneous_doppler_type,
-                                                                get_link_end_def(define_link_ends("DopTrackStation")))
+                                                                get_link_ends("DopTrackStation"))
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
