@@ -3,13 +3,9 @@ import numpy as np
 import math
 import datetime
 
-# Load Doptrack modules
-from doptrack.recording.models import Recording
-from doptrack.astro.tle import TLE
-from doptrack.astro.astro import TLESatellite
-
 from sgp4.io import twoline2rv
 from sgp4.earth_gravity import wgs84
+from sgp4.propagation import sgp4, sgp4init
 
 from tudatpy.kernel import constants
 
@@ -32,34 +28,25 @@ def get_tle_ref_time(filename: str) -> [float, np.ndarray]:
 
 def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
 
-    # Load recording
-    recording = Recording.load(filename, '')
+    # Retrieve TLE
+    with open(filename, 'r') as metafile:
+        metadata = yaml.load(metafile, Loader=yaml.FullLoader)
 
-    # Retrieve TLE elements
-    line1_tle = recording.meta.satellite.tle.line1
-    line2_tle = recording.meta.satellite.tle.line2
+    line1_tle = metadata["Sat"]["Predict"]["used TLE line1"]
+    line2_tle = metadata["Sat"]["Predict"]["used TLE line2"]
 
-
-    # Compute initial TEME state
-    tle_from_meta = TLE(line1=line1_tle, line2=line2_tle)
-    delfi_tle = TLESatellite.from_tle(name="delfi",tle=tle_from_meta)
+    # Compute initial Julian date
     year = int('20' + line1_tle[18:20])
     fraction_day = float(str(line1_tle[20:23]) + '.' + str(line1_tle[24:32]))
     mon, day, hr, minute, sec = days2mdhms(year, fraction_day)
 
-    tle_time = datetime.datetime(year, int(mon), int(day), int(hr), int(minute), int(sec))
-    state_teme = delfi_tle.state_teme(tle_time)
-
-    # Compute initial Julian date
-    julian_date = jday(year, int(mon), int(day), int(hr), int(minute), int(sec))
-
-    initial_state_array = np.array(
-        [state_teme.position.x, state_teme.position.y, state_teme.position.z,
-         state_teme.velocity.u, state_teme.velocity.v, state_teme.velocity.w])
-
+    julian_date = jday(year, int(mon), int(day), int(hr), int(minute), 0) + sec / 86400.0
     initial_time = (julian_date - j2000_days) * 86400.0
 
+    # Retrieve initial teme state from TLE
     sat = twoline2rv(line1_tle, line2_tle, wgs84)
-    b_star = sat.bstar
+    initial_state_sgp4 = sgp4(sat, 0.0)
+    b_star_coef = sat.bstar
+    initial_state_array = np.concatenate((np.array(initial_state_sgp4[0]), np.array(initial_state_sgp4[1])), axis=None) * 1.0e3
 
-    return initial_time, initial_state_array, b_star
+    return initial_time, initial_state_array, b_star_coef
