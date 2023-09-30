@@ -12,10 +12,7 @@ from estimation_functions.observations_data import *
 from utility_functions.tle import *
 
 # Load tudatpy modules
-from tudatpy.kernel import constants
-from tudatpy.kernel.interface import spice
 from tudatpy.kernel import numerical_simulation
-from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.numerical_simulation import estimation_setup
 from tudatpy.kernel.astro import element_conversion
 
@@ -34,12 +31,18 @@ start_recording_day = get_start_next_day(initial_epoch)
 
 # Calculate final propagation_functions epoch
 final_epoch = start_recording_day + 1.0 * 86400.0
+mid_epoch = (initial_epoch+final_epoch)/2.0
 
 epochs = []
-time = initial_epoch
-while time <= final_epoch+10.0:
+time = mid_epoch
+while time <= final_epoch + 10.0:
     epochs.append(time)
     time += 10.0
+time = mid_epoch - 10.0
+while time >= initial_epoch - 10.0:
+    epochs.append(time)
+    time += -10.0
+epochs.sort()
 
 propagated_states_sgp4 = propagate_sgp4(data_folder+metadata[0], initial_epoch, epochs)
 dict_solution_sgp4 = {}
@@ -53,8 +56,8 @@ drag_coefficient_delfi = get_drag_coefficient(mass_delfi, ref_area_delfi, b_star
 srp_coefficient_delfi = 1.2
 bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=False, tabulated_ephemeris=dict_solution_sgp4)
 
-# Set spacecraft initial state of Delfi
-initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
+# initial state at mid epoch
+initial_state = propagate_sgp4(data_folder + metadata[0], initial_epoch, [mid_epoch])[0, 1:]
 
 
 # Define accelerations exerted on Delfi
@@ -85,9 +88,6 @@ acceleration_models = dict(
 
 # Create accelerations
 accelerations = create_accelerations(acceleration_models, bodies)
-
-# Create numerical integrator settings
-integrator_settings = create_integrator_settings(initial_epoch)
 
 # Create propagator settings
 propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)

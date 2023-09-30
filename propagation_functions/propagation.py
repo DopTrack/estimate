@@ -133,6 +133,9 @@ def create_integrator_settings(initial_time, time_step: float = 10.0):
 
 def create_propagator_settings(initial_state, initial_time, final_time, accelerations, save_accelerations=False, accelerations_to_save=[]):
 
+    # Define mid time
+    mid_time = (initial_time+final_time)/2.0
+
     # Define bodies that are propagated
     bodies_to_propagate = ["Delfi"]
 
@@ -140,10 +143,11 @@ def create_propagator_settings(initial_state, initial_time, final_time, accelera
     central_bodies = ["Earth"]
 
     # Create termination settings
-    termination_condition = propagation_setup.propagator.time_termination(final_time)
+    termination_condition = propagation_setup.propagator.non_sequential_termination(
+        propagation_setup.propagator.time_termination(final_time), propagation_setup.propagator.time_termination(initial_time))
 
     # Define integrator settings
-    integrator_settings = create_integrator_settings(initial_time)
+    integrator_settings = create_integrator_settings(mid_time)
 
     # Define dependent variables
     dependent_variables = [
@@ -156,11 +160,14 @@ def create_propagator_settings(initial_state, initial_time, final_time, accelera
             dependent_variables.append(accelerations_to_save[i])
 
     return propagation_setup.propagator.translational(
-        central_bodies, accelerations, bodies_to_propagate, initial_state, initial_time, integrator_settings,
+        central_bodies, accelerations, bodies_to_propagate, initial_state, mid_time, integrator_settings,
         termination_condition, output_variables=dependent_variables)
 
 
 def propagate_initial_state(initial_state, initial_time, final_time, bodies, acceleration_models, save_accelerations=False):
+
+    # mid time
+    mid_time = (initial_time+final_time)/2.0
 
     # Create accelerations
     accelerations = create_accelerations(acceleration_models, bodies)
@@ -169,7 +176,7 @@ def propagate_initial_state(initial_state, initial_time, final_time, bodies, acc
         accelerations_to_save, accelerations_ids = retrieve_accelerations_to_save(acceleration_models)
 
     # Create numerical integrator settings
-    integrator_settings = create_integrator_settings(initial_time)
+    integrator_settings = create_integrator_settings(mid_time)
 
     # Create propagator settings
     single_arc_propagator_settings = create_propagator_settings(initial_state, initial_time, final_time, accelerations, save_accelerations, accelerations_to_save)

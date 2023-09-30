@@ -34,6 +34,10 @@ start_recording_day = get_start_next_day(initial_epoch)
 
 # Calculate final propagation_functions epoch
 final_epoch = start_recording_day + 1.0 * 86400.0
+mid_epoch = (initial_epoch+final_epoch) / 2.0
+
+# initial state at mid epoch
+initial_state = propagate_sgp4(data_folder + metadata[0], initial_epoch, [mid_epoch])[0, 1:]
 
 # Load and process observations
 recording_start_times = extract_recording_start_times_yml(data_folder, metadata)
@@ -49,9 +53,6 @@ ref_area_delfi = 0.035
 drag_coefficient_delfi = get_drag_coefficient(mass_delfi, ref_area_delfi, b_star_coef, from_tle=True)
 srp_coefficient_delfi = 1.2
 bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=False)
-
-# Set spacecraft initial state of Delfi
-initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
 
 
 # Define accelerations exerted on Delfi
@@ -84,13 +85,13 @@ acceleration_models = dict(
 orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, acceleration_models)
 arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
 # propagated_states = orbit[0]
-# propagated_states_sgp4 = propagate_sgp4(data_folder+metadata, initial_epoch, propagated_states[:, 0].tolist())
+# propagated_states_sgp4 = propagate_sgp4(data_folder+metadata[0], initial_epoch, propagated_states[:, 0].tolist())
 #
 # diff_tudat_sgp4 = np.linalg.norm(propagated_states_sgp4[:, 1:3] - propagated_states[:, 1:3], axis=1)
 #
 # # Plot propagated orbit
 # plt.figure()
-# plt.plot((propagated_states[:, 0]-initial_epoch)/3600.0, diff_tudat_sgp4, color='blue')
+# plt.plot((propagated_states[:, 0]-initial_epoch)/3600.0, diff_tudat_sgp4/1.0e3, color='blue')
 # plt.grid()
 # plt.ylabel('Difference [km]')
 # plt.xlabel('Time [h]')

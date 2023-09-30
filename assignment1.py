@@ -36,6 +36,10 @@ start_recording_day = get_start_next_day(initial_epoch)
 # Define end of the day (final time of the propagation)
 nb_days_to_propagate = 1
 final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
+mid_epoch = (initial_epoch+final_epoch)/2.0
+
+# initial state at mid epoch
+initial_state = propagate_sgp4(metadata_file, initial_epoch, [mid_epoch], old_yml=True)[0, 1:]
 
 print('initial epoch: ', initial_epoch)
 print('initial state TEME: ', initial_state_teme)
@@ -52,9 +56,6 @@ ref_area_delfi = 0.035
 drag_coefficient_delfi = get_drag_coefficient(mass_delfi, ref_area_delfi, b_star_coef, from_tle=True)
 srp_coefficient_delfi = 1.2
 bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
-
-# Set Delfi's initial state to the TLE prediction
-initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
 
 # Define accelerations exerted on Delfi
 # The following can be modified. Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
