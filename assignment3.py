@@ -219,23 +219,16 @@ parameters_list = dict(
         'type': 'global' # can only be global
     }
 )
-
-link_ends = dict()
-link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
-link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
-
 parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
-                                           arc_start_times, [(link_ends, passes_start_times)], Doppler_models)
+                                           arc_start_times, [(get_link_ends_id("DopTrackStation"), passes_start_times)], Doppler_models)
 estimation_setup.print_parameter_names(parameters_to_estimate)
 
 
 # Create the estimator object
 estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
 
-print('max observation_times', max(observation_times))
 # Simulate (ideal) observations
 ideal_observations = simulate_observations_from_estimator(observation_times, estimator, bodies)
-
 
 # Save the initial parameters values to later analyse the error
 initial_parameters = parameters_to_estimate.parameter_vector

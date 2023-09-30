@@ -7,7 +7,7 @@ from sgp4.io import twoline2rv
 from sgp4.earth_gravity import wgs84
 from sgp4.propagation import sgp4, sgp4init
 
-from tudatpy.kernel import constants
+from tudatpy.kernel.astro import element_conversion
 
 from utility_functions.time import *
 
@@ -44,7 +44,7 @@ def extract_tle_from_yml(filename: str):
     return line1_tle, line2_tle
 
 
-def get_tle_initial_conditions(filename: str, old_yml=False) -> [float, np.ndarray]:
+def get_tle_initial_conditions(filename: str, old_yml=False) -> [float, np.ndarray, float]:
 
     # Retrieve TLE
     if old_yml:
@@ -67,3 +67,22 @@ def get_tle_initial_conditions(filename: str, old_yml=False) -> [float, np.ndarr
     initial_state_array = np.concatenate((np.array(initial_state_sgp4[0]), np.array(initial_state_sgp4[1])), axis=None) * 1.0e3
 
     return initial_time, initial_state_array, b_star_coef
+
+
+def propagate_sgp4(filename: str, initial_epoch: float, epochs: list[float], old_yml=False) -> np.array:
+    # Retrieve TLE
+    if old_yml:
+        line1_tle, line2_tle = extract_tle_from_old_yml(filename)
+    else:
+        line1_tle, line2_tle = extract_tle_from_yml(filename)
+
+    sat = twoline2rv(line1_tle, line2_tle, wgs84)
+
+    propagated_states = []
+    # Propagate to epoch with sgp4
+    for time in epochs:
+        state_sgp4 = sgp4(sat, (time-initial_epoch)/60.0)
+        state_teme_array = np.concatenate((np.array(state_sgp4[0]), np.array(state_sgp4[1])))*1.0e3
+        propagated_states.append(np.concatenate((np.array([time]), element_conversion.teme_state_to_j2000(time, state_teme_array)), axis=None))
+
+    return np.array(propagated_states)
