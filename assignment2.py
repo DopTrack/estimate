@@ -56,7 +56,7 @@ indices_files_to_load = [0, 1]
 
 
 # Retrieve initial epoch and state of the first pass
-initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_folder + metadata[0])
+initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_folder + metadata[0], old_yml=True)
 start_recording_day = get_start_next_day(initial_epoch)
 
 

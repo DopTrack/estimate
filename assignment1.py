@@ -28,7 +28,7 @@ data_folder = 'data/'
 metadata_file = metadata_folder + 'Delfi-C3_32789_202004020904.yml'
 
 # Retrieve initial state from TLE and associated time
-initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_file)
+initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_file, old_yml=True)
 
 # Define start of the day (initial time of the propagation)
 start_recording_day = get_start_next_day(initial_epoch)

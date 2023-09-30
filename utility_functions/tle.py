@@ -25,15 +25,31 @@ def get_tle_ref_time(filename: str) -> [float, np.ndarray]:
 
     return time_pps+rx_time
 
-
-def get_tle_initial_conditions(filename: str) -> [float, np.ndarray]:
-
-    # Retrieve TLE
+def extract_tle_from_old_yml(filename: str):
     with open(filename, 'r') as metafile:
         metadata = yaml.load(metafile, Loader=yaml.FullLoader)
-
     line1_tle = metadata["Sat"]["Predict"]["used TLE line1"]
     line2_tle = metadata["Sat"]["Predict"]["used TLE line2"]
+
+    return line1_tle, line2_tle
+
+
+def extract_tle_from_yml(filename: str):
+    with open(filename, 'r') as metafile:
+        metadata = yaml.load(metafile, Loader=yaml.FullLoader)
+    line1_tle = metadata["satellite"]["tle"]["line1"]
+    line2_tle = metadata["satellite"]["tle"]["line2"]
+
+    return line1_tle, line2_tle
+
+
+def get_tle_initial_conditions(filename: str, old_yml=False) -> [float, np.ndarray]:
+
+    # Retrieve TLE
+    if old_yml:
+        line1_tle, line2_tle = extract_tle_from_old_yml(filename)
+    else:
+        line1_tle, line2_tle = extract_tle_from_yml(filename)
 
     # Compute initial Julian date
     year = int('20' + line1_tle[18:20])
