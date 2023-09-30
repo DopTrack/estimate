@@ -35,9 +35,9 @@ def extract_recording_start_times_yml(folder: str, filenames: list[str]) -> list
         with open(folder + filename, 'r') as metafile:
             metadata = yaml.load(metafile, Loader=yaml.FullLoader)
 
-    time = metadata["tracking"]["epoch"]
-    julian_date = jday(time.year, int(time.month), int(time.day), int(time.hour), int(time.minute), int(0.0)) + float(time.second) / 86400.0
-    start_recording_times.append((julian_date - j2000_days) * 86400.0)
+        time = metadata["tracking"]["epoch"]
+        julian_date = jday(time.year, int(time.month), int(time.day), int(time.hour), int(time.minute), int(0.0)) + float(time.second) / 86400.0
+        start_recording_times.append((julian_date - j2000_days) * 86400.0)
 
     return start_recording_times
 

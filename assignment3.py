@@ -91,7 +91,7 @@ passes_start_times, passes_end_times, observation_times, observations_set = load
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
 # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
-arc_start_times, arc_end_times = define_arcs('per_3_days', passes_start_times, passes_end_times)
+arc_start_times, arc_mid_times, arc_end_times = define_arcs('per_3_days', passes_start_times, passes_end_times)
 
 print('arc_start_times', arc_start_times)
 print('arc_end_times', arc_end_times)
@@ -140,7 +140,7 @@ acceleration_models = dict(
 
 # Propagate dynamics and retrieve Delfi's initial state at the start of each arc
 orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, acceleration_models)
-arc_wise_initial_states = get_initial_states(bodies, arc_start_times)
+arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
 
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
@@ -220,7 +220,7 @@ parameters_list = dict(
     }
 )
 parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
-                                           arc_start_times, [(get_link_ends_id("DopTrackStation"), passes_start_times)], Doppler_models)
+                                           arc_start_times, arc_mid_times, [(get_link_ends_id("DopTrackStation"), passes_start_times)], Doppler_models)
 estimation_setup.print_parameter_names(parameters_to_estimate)
 
 

@@ -208,17 +208,18 @@ def define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_tim
     propagator_settings_list = []
     for i in range(nb_arcs):
         arc_initial_state = arc_wise_initial_states[i]
-        arc_initial_time = arc_start_times[i]
+        arc_mid_time = (arc_start_times[i]+arc_end_times[i])/2.0
 
-        integrator_settings = create_integrator_settings(arc_initial_time)
+        integrator_settings = create_integrator_settings(arc_mid_time)
 
-        arc_termination_condition = propagation_setup.propagator.time_termination(arc_end_times[i])
+        arc_termination_condition = propagation_setup.propagator.non_sequential_termination(
+            propagation_setup.propagator.time_termination(arc_end_times[i]), propagation_setup.propagator.time_termination(arc_start_times[i]))
 
         dependent_variables = []
         dependent_variables.append(propagation_setup.dependent_variable.total_acceleration("Delfi"))
 
         propagator_settings_list.append(propagation_setup.propagator.translational(
-            central_bodies, accelerations, bodies_to_propagate, arc_initial_state, arc_initial_time, integrator_settings, arc_termination_condition,
+            central_bodies, accelerations, bodies_to_propagate, arc_initial_state, arc_mid_time, integrator_settings, arc_termination_condition,
             output_variables=dependent_variables))
 
     multi_arc_propagator_settings = propagation_setup.propagator.multi_arc(propagator_settings_list)

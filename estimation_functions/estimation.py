@@ -15,6 +15,7 @@ from utility_functions.time import get_days_starting_times, get_days_end_times
 def define_arcs(option, passes_start_times, passes_end_times):
 
     arc_start_times = []
+    mid_arc_times = []
     arc_end_times = []
 
     if option == "per_pass":
@@ -57,7 +58,10 @@ def define_arcs(option, passes_start_times, passes_end_times):
     else:
         raise Exception('Error when defining tracking arcs, the time interval is not recognised.')
 
-    return arc_start_times, arc_end_times
+    for k in range(len(arc_start_times)):
+        mid_arc_times.append((arc_start_times[k]+arc_end_times[k])/2.0)
+
+    return arc_start_times, mid_arc_times, arc_end_times
 
 
 def define_doptrack_station(bodies):
@@ -337,14 +341,14 @@ def define_biases(Doppler_models={}, passes_start_times=[], arc_start_times=[]):
     return observation.combined_bias(combined_biases)
 
 
-def define_parameters(parameters_list, bodies, propagator_settings, initial_time, arc_start_times, pass_times_per_linkend, obs_models={}):
+def define_parameters(parameters_list, bodies, propagator_settings, initial_time, arc_start_times, arc_mid_times, pass_times_per_linkend, obs_models={}):
 
     parameter_settings = []
 
     # Initial states
     if "initial_state_delfi" in parameters_list:
         if parameters_list.get('initial_state_delfi').get('estimate'):
-            initial_states_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies, arc_start_times)
+            initial_states_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies, arc_mid_times)
             for settings in initial_states_settings:
                 parameter_settings.append(settings)
 
@@ -492,14 +496,14 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
     nb_parameters = len(truth_parameters)
 
     inv_cov = np.zeros((nb_parameters, nb_parameters))
-    apriori_covariance_position = 5.0e3#e-3
-    apriori_covariance_velocity = 5.0#e-6
+    apriori_covariance_position = 1.0e3
+    apriori_covariance_velocity = 1.0#e-6
     aPrioriCovarianceSRPCoef = 0.2
 
     apriori_time_bias = 1.0e-7
 
-    for i in range (nb_arcs):
-        for j in range (3):
+    for i in range(nb_arcs):
+        for j in range(3):
             inv_cov[i*6+j, i*6+j] = 1.0 / (apriori_covariance_position * apriori_covariance_position)
             inv_cov[i*6+3+j, i*6+3+j] = 1.0 / (apriori_covariance_velocity * apriori_covariance_velocity)
 
