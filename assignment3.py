@@ -81,9 +81,12 @@ final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
 print('initial_epoch', initial_epoch)
 print('final_epoch', final_epoch)
 
+# Retrieve recording start epochs
+recording_start_times = extract_recording_start_times_old_yml(metadata_folder, [metadata[i] for i in indices_files_to_load])
+
 # Load and process observations
 passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
-    data_folder, data, indices_files_to_load, metadata, new_obs_format=True)
+    data_folder, [data[i] for i in indices_files_to_load], recording_start_times, new_obs_format=True)
 
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)

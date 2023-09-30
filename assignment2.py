@@ -59,6 +59,8 @@ indices_files_to_load = [0, 1]
 initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_folder + metadata[0], old_yml=True)
 start_recording_day = get_start_next_day(initial_epoch)
 
+# Retrieve recording starting times
+recording_start_times = extract_recording_start_times_old_yml(metadata_folder, [metadata[i] for i in indices_files_to_load])
 
 # Calculate final propagation_functions epoch
 nb_days_to_propagate = 9
@@ -68,7 +70,7 @@ print('initial_epoch', initial_epoch)
 print('final_epoch', final_epoch)
 
 # Load and process observations
-passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, indices_files_to_load)
+passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, [data[i] for i in indices_files_to_load], recording_start_times)
 
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)

@@ -12,6 +12,39 @@ from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 import tudatpy.kernel.numerical_simulation.estimation as tudat_estimation
 from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
 
+import yaml
+
+
+def extract_recording_start_times_old_yml(folder: str, filenames: list[str]) -> list[float]:
+    j2000_days = 2451545.0
+    start_recording_times = []
+
+    for filename in filenames:
+        with open(folder + filename, 'r') as metafile:
+            metadata = yaml.load(metafile, Loader=yaml.FullLoader)
+        time_pps = metadata['Sat']['Record']['time pps']
+        rx_time = metadata['Sat']['uhd']['rx_time']
+        julian_date_time_pps = jday(time_pps.year, int(time_pps.month), int(time_pps.day), int(time_pps.hour), int(time_pps.minute), int(time_pps.second))
+        time_pps = (julian_date_time_pps - j2000_days) * 86400.0
+        start_recording_times.append(time_pps+rx_time)
+
+    return start_recording_times
+
+
+def extract_recording_start_times_yml(folder: str, filenames: list[str]) -> list[float]:
+    j2000_days = 2451545.0
+    start_recording_times = []
+
+    for filename in filenames:
+        with open(folder + filename, 'r') as metafile:
+            metadata = yaml.load(metafile, Loader=yaml.FullLoader)
+
+    time = metadata["tracking"]["epoch"]
+    julian_date = jday(time.year, int(time.month), int(time.day), int(time.hour), int(time.minute), int(0.0)) + float(time.second) / 86400.0
+    start_recording_times.append((julian_date - j2000_days) * 86400.0)
+
+    return start_recording_times
+
 
 def process_observations_old(filename: str, fraction_discarded: float = 0.1) -> np.array:
     observations = []
@@ -22,32 +55,16 @@ def process_observations_old(filename: str, fraction_discarded: float = 0.1) -> 
     nb_points = len(lines)
     nb_discarded_points = int(fraction_discarded / 2.0 * nb_points)
 
-    # Compute initial epoch
-    result = lines[1].strip().split(',')
-    epoch = result[0].split(' ')
-    date = epoch[0].split('-')
-    time = epoch[1].split(':')
-    year = date[0]
-    month = date[1]
-    day = date[2]
-    hour = time[0]
-    minute = time[1]
-    second = time[2]
-
-    initial_julian_date = jday(int(year), int(month), int(day), int(hour), int(minute), int(0)) + float(
-        second) / 86400.0
-    initial_epoch = (initial_julian_date - j2000_days) * 86400.0 - float(result[1])
-
     # Retrieve observations of interest
     for line in lines[nb_discarded_points + 1:nb_points - nb_discarded_points]:
         result = line.strip().split(',')
-        observations.append([float(result[1]) + initial_epoch, float(result[2])])
+        observations.append([float(result[1]), float(result[2])])
     f.close()
 
     return np.array(observations)
 
 
-def process_observations_new(filename: str, ref_time, fraction_discarded: float = 0.1) -> np.array:
+def process_observations_new(filename: str, fraction_discarded: float = 0.1) -> np.array:
     observations = []
 
     f = open(filename, 'r')
@@ -58,45 +75,33 @@ def process_observations_new(filename: str, ref_time, fraction_discarded: float 
     # Retrieve observations of interest
     for line in lines[nb_discarded_points + 1:nb_points - nb_discarded_points]:
         result = line.strip().split(',')
-        observations.append([float(result[0]) + ref_time, float(result[2])])
+        observations.append([float(result[0]), float(result[2])])
     f.close()
 
     return np.array(observations)
 
 
-def load_and_format_observations(data_folder, data, index_files=[], metadata=[], new_obs_format=False):
+def load_and_format_observations(data_folder, data, recording_start_times, new_obs_format=False):
+
     passes_start_times = []
     passes_end_times = []
+    existing_data = np.empty((0, 2))
 
-    if len(index_files) == 0:
-        for i in range(len(data)):
-            index_files.append(i)
-
-    if not new_obs_format:
-        existing_data = process_observations_old(data_folder + data[index_files[0]])
-    else:
-        if len(metadata) == 0:
-            raise Exception(
-                'Error when using new observation format, metadata should be provided as input to load_and_format_observations')
-        ref_time = get_tle_ref_time(data_folder + metadata[index_files[0]])
-        existing_data = process_observations_new(data_folder + data[index_files[0]], ref_time)
-
-    passes_start_times.append(existing_data[0, 0] - 10.0)
-    passes_end_times.append(existing_data[np.shape(existing_data)[0] - 1, 0] + 10.0)
-    for i in range(1, len(index_files)):
+    for k in range(len(data)):
         if not new_obs_format:
-            data_set = process_observations_old(data_folder + data[index_files[i]])
+            data_set = process_observations_old(data_folder + data[k])
         else:
-            ref_time = get_tle_ref_time(data_folder + metadata[index_files[i]])
-            data_set = process_observations_new(data_folder + data[index_files[i]], ref_time)
+            data_set = process_observations_new(data_folder + data[k])
+
+        data_set[:, 0] += recording_start_times[k]
         passes_start_times.append(data_set[0, 0] - 10.0)
         passes_end_times.append(data_set[np.shape(data_set)[0] - 1, 0] + 10.0)
         existing_data = np.concatenate((existing_data, data_set))
+
     obs_times = existing_data[:, 0].tolist()
     obs_values = []
     for i in range(len(existing_data)):
         obs_values.append([np.array([-existing_data[i, 1]])])
-        a = np.array([-existing_data[i, 1]])
 
     # Define link ends
     link_ends = dict()
@@ -113,34 +118,23 @@ def load_and_format_observations(data_folder, data, index_files=[], metadata=[],
     return passes_start_times, passes_end_times, obs_times, observations_set
 
 
-def load_existing_observations(data_folder, data, index_files=[], metadata=[], new_obs_format=False):
+def load_existing_observations(data_folder, data, recording_start_times, new_obs_format=False):
+
     passes_start_times = []
     passes_end_times = []
+    existing_data = np.empty((0, 2))
 
-    if len(index_files) == 0:
-        for i in range(len(data)):
-            index_files.append(i)
-
-    if not new_obs_format:
-        existing_data = process_observations_old(data_folder + data[index_files[0]])
-    else:
-        if len(metadata) == 0:
-            raise Exception(
-                'Error when using new observation format, metadata should be provided as input to load_and_format_observations')
-        ref_time = get_tle_ref_time(data_folder + metadata[index_files[0]])
-        existing_data = process_observations_new(data_folder + data[index_files[0]], ref_time)
-
-    passes_start_times.append(existing_data[0, 0] - 10.0)
-    passes_end_times.append(existing_data[np.shape(existing_data)[0] - 1, 0] + 10.0)
-    for i in range(1, len(index_files)):
+    for k in range(len(data)):
         if not new_obs_format:
-            data_set = process_observations_old(data_folder + data[index_files[i]])
+            data_set = process_observations_old(data_folder + data[k])
         else:
-            ref_time = get_tle_ref_time(data_folder + metadata[index_files[i]])
-            data_set = process_observations_new(data_folder + data[index_files[i]], ref_time)
+            data_set = process_observations_new(data_folder + data[k])
+
+        data_set[:, 0] += recording_start_times[k]
         passes_start_times.append(data_set[0, 0] - 10.0)
         passes_end_times.append(data_set[np.shape(data_set)[0] - 1, 0] + 10.0)
         existing_data = np.concatenate((existing_data, data_set))
+
     obs_times = existing_data[:, 0].tolist()
     obs_values = []
     for i in range(len(existing_data)):
