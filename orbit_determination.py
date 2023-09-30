@@ -32,19 +32,19 @@ j2000_days = 2451545.0
 data_folder = 'delfiC3/'
 
 # Files to be uploaded
-metadata = 'Delfi-C3_32789_202309241900.yml'
-data = 'Delfi-C3_32789_202309241900.csv'
+metadata = ['Delfi-C3_32789_202309240829.yml', 'Delfi-C3_32789_202309241900.yml']
+data = ['Delfi-C3_32789_202309240829.csv', 'Delfi-C3_32789_202309241900.csv']
 
 # Retrieve initial epoch and state of the first pass
-initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(data_folder + metadata)
+initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(data_folder + metadata[0])
 start_recording_day = get_start_next_day(initial_epoch)
 
 # Calculate final propagation_functions epoch
 final_epoch = start_recording_day + 1.0 * 86400.0
 
 # Load and process observations
-recording_start_times = extract_recording_start_times_yml(data_folder, [metadata])
-passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, [data], recording_start_times, new_obs_format=True)
+recording_start_times = extract_recording_start_times_yml(data_folder, metadata)
+passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, recording_start_times, new_obs_format=True)
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
 # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
