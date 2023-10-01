@@ -12,15 +12,8 @@ from fit_sgp4_solution import fit_sgp4_solution
 
 from utility_functions.tle import *
 
-# Load tudatpy modules
-from tudatpy.kernel import constants
-from tudatpy.kernel.interface import spice
 from tudatpy.kernel import numerical_simulation
-from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.numerical_simulation import estimation_setup
-from tudatpy.kernel.astro import element_conversion
-
-j2000_days = 2451545.0
 
 # Define import folder
 data_folder = 'delfiC3/'
@@ -28,14 +21,6 @@ data_folder = 'delfiC3/'
 # Files to be uploaded
 metadata = ['Delfi-C3_32789_202309240829.yml', 'Delfi-C3_32789_202309241900.yml']
 data = ['Delfi-C3_32789_202309240829.csv', 'Delfi-C3_32789_202309241900.csv']
-
-# # Retrieve initial epoch and state of the first pass
-# initial_epoch, initial_state_teme, b_star = get_tle_initial_conditions(data_folder + metadata[0])
-# start_recording_day = get_start_next_day(initial_epoch)
-#
-# # Calculate final propagation_functions epoch
-# final_epoch = start_recording_day + 1.0 * 86400.0
-# mid_epoch = (initial_epoch+final_epoch) / 2.0
 
 # initial state at mid epoch
 initial_epoch, mid_epoch, final_epoch, initial_state, drag_coef = fit_sgp4_solution(data_folder + metadata[0], propagation_time_in_days=1.0)
@@ -50,55 +35,18 @@ bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephem
 recording_start_times = extract_recording_start_times_yml(data_folder, metadata)
 passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, recording_start_times, new_obs_format=True)
 
-# Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
-# Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
+# Define tracking arcs and retrieve the corresponding arc starting times
 arc_start_times, arc_mid_times, arc_end_times = define_arcs('per_day', passes_start_times, passes_end_times)
 
 # Define accelerations exerted on Delfi
-# Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
-acceleration_models = dict(
-    Sun={
-        'point_mass_gravity': True,
-        'solar_radiation_pressure': True
-    },
-    Moon={
-        'point_mass_gravity': True
-    },
-    Earth={
-        'point_mass_gravity': False,
-        'spherical_harmonic_gravity': True,
-        'drag': True
-    },
-    Venus={
-        'point_mass_gravity': True
-    },
-    Mars={
-        'point_mass_gravity': True
-    },
-    Jupiter={
-        'point_mass_gravity': True
-    }
-)
+accelerations = get_default_acceleration_models()
 
 # Propagate dynamics and retrieve Delfi's initial state at the start of each arc
-orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, acceleration_models)
+orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
 arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
-# propagated_states = orbit[0]
-# propagated_states_sgp4 = propagate_sgp4(data_folder+metadata[0], initial_epoch, propagated_states[:, 0].tolist())
-#
-# diff_tudat_sgp4 = np.linalg.norm(propagated_states_sgp4[:, 1:3] - propagated_states[:, 1:3], axis=1)
-#
-# # Plot propagated orbit
-# plt.figure()
-# plt.plot((propagated_states[:, 0]-initial_epoch)/3600.0, diff_tudat_sgp4/1.0e3, color='blue')
-# plt.grid()
-# plt.ylabel('Difference [km]')
-# plt.xlabel('Time [h]')
-# plt.show()
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
 bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=True)
-accelerations = create_accelerations(acceleration_models, bodies)
 
 # Define multi-arc propagator settings
 multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations)
@@ -107,19 +55,7 @@ multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_i
 define_doptrack_station(bodies)
 
 # Define default observation settings
-# Specify on which time interval the observation bias(es) should be defined. This will change throughout the assignment (can be 'per_pass', 'per_arc', 'global')
-# Noting that the arc duration can vary (see arc definition line 64)
-bias_definition = 'per_pass'
-Doppler_models = dict(
-    absolute_bias={
-        'activated': True,
-        'time_interval': bias_definition
-    },
-    time_drift={
-        'activated': True,
-        'time_interval': bias_definition
-    }
-)
+Doppler_models = get_default_doppler_models()
 observation_settings = define_observation_settings(Doppler_models, passes_start_times, arc_start_times)
 
 # Define parameters to estimate
@@ -134,7 +70,6 @@ parameters_list = dict(
         'estimate': True
     }
 )
-
 parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
                                            arc_start_times, arc_mid_times, [(get_link_ends_id("DopTrackStation"), passes_start_times)], Doppler_models)
 estimation_setup.print_parameter_names(parameters_to_estimate)
@@ -198,7 +133,7 @@ plt.show()
 fig = plt.figure()
 ax = fig.add_subplot()
 # plt.hist(residuals[:,1],100)
-plt.hist(residuals[:,nb_iterations-1],100)
+plt.hist(residuals[:,nb_iterations-1], 100)
 ax.set_xlabel('Doppler residuals')
 ax.set_ylabel('Nb occurrences []')
 plt.grid()

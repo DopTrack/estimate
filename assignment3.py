@@ -87,7 +87,7 @@ bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephem
 
 # Define accelerations exerted on Delfi
 # Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
-acceleration_models = dict(
+accelerations = dict(
     Sun={
         'point_mass_gravity': True,
         'solar_radiation_pressure': True
@@ -112,13 +112,12 @@ acceleration_models = dict(
 )
 
 # Propagate dynamics and retrieve Delfi's initial state at the start of each arc
-orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, acceleration_models)
+orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
 arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
 
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
 bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=True)
-accelerations = create_accelerations(acceleration_models, bodies)
 
 real_mu = bodies.get("Earth").gravity_field_model.gravitational_parameter
 bodies.get("Earth").gravity_field_model.gravitational_parameter = 1.0 * bodies.get("Earth").gravity_field_model.gravitational_parameter

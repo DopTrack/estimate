@@ -46,7 +46,7 @@ bodies = define_environment(mass, ref_area, drag_coef, srp_coef)
 
 # Define accelerations exerted on Delfi
 # The following can be modified. Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
-acceleration_models = dict(
+accelerations = dict(
     Sun={
         'point_mass_gravity': True,
         'solar_radiation_pressure': True
@@ -73,12 +73,11 @@ acceleration_models = dict(
 # Propagate dynamics of the Delfi satellite from initial_epoch to final_epoch, starting from initial_state
 # The propagation output is given in cartesian and keplerian states, and the latitude/longitude of the spacecraft are also saved.
 cartesian_states, keplerian_states, latitudes, longitudes, saved_accelerations = \
-    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, acceleration_models, True)
+    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True)
 
 # Create propagator settings
-accelerations = create_accelerations(acceleration_models, bodies)
-accelerations_to_save, accelerations_ids = retrieve_accelerations_to_save(acceleration_models)
-propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
+accelerations_to_save, accelerations_ids = retrieve_accelerations_to_save(accelerations)
+propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, bodies, accelerations)
 
 
 # Plot propagated orbit

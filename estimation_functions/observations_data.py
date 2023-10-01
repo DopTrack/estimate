@@ -20,9 +20,10 @@ def extract_recording_start_times_old_yml(folder: str, filenames: list[str]) -> 
             metadata = yaml.load(metafile, Loader=yaml.FullLoader)
         time_pps = metadata['Sat']['Record']['time pps']
         rx_time = metadata['Sat']['uhd']['rx_time']
-        julian_date_time_pps = jday(time_pps.year, int(time_pps.month), int(time_pps.day), int(time_pps.hour), int(time_pps.minute), int(time_pps.second))
+        julian_date_time_pps = jday(time_pps.year, int(time_pps.month), int(time_pps.day), int(time_pps.hour),
+                                    int(time_pps.minute), int(time_pps.second))
         time_pps = (julian_date_time_pps - j2000_days) * 86400.0
-        start_recording_times.append(time_pps+rx_time)
+        start_recording_times.append(time_pps + rx_time)
 
     return start_recording_times
 
@@ -36,7 +37,8 @@ def extract_recording_start_times_yml(folder: str, filenames: list[str]) -> list
             metadata = yaml.load(metafile, Loader=yaml.FullLoader)
 
         time = metadata["tracking"]["epoch"]
-        julian_date = jday(time.year, int(time.month), int(time.day), int(time.hour), int(time.minute), int(0.0)) + float(time.second) / 86400.0
+        julian_date = jday(time.year, int(time.month), int(time.day), int(time.hour), int(time.minute),
+                           int(0.0)) + float(time.second) / 86400.0
         start_recording_times.append((julian_date - j2000_days) * 86400.0)
 
     return start_recording_times
@@ -78,7 +80,6 @@ def process_observations_new(filename: str, fraction_discarded: float = 0.1) -> 
 
 
 def load_and_format_observations(data_folder, data, recording_start_times, new_obs_format=False):
-
     passes_start_times = []
     passes_end_times = []
     existing_data = np.empty((0, 2))
@@ -115,7 +116,6 @@ def load_and_format_observations(data_folder, data, recording_start_times, new_o
 
 
 def load_existing_observations(data_folder, data, recording_start_times, new_obs_format=False):
-
     passes_start_times = []
     passes_end_times = []
     existing_data = np.empty((0, 2))
@@ -213,6 +213,21 @@ def load_existing_observations(data_folder, data, recording_start_times, new_obs
 #     observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
 #
 #     return observations_set
+
+
+def get_default_doppler_models() -> dict:
+    bias_definition = 'per_pass'
+    Doppler_models = dict(
+        absolute_bias={
+            'activated': True,
+            'time_interval': bias_definition
+        },
+        time_drift={
+            'activated': True,
+            'time_interval': bias_definition
+        }
+    )
+    return Doppler_models
 
 
 def get_observations_single_pass(single_pass_start_time, single_pass_end_time, observations_set):
@@ -325,7 +340,8 @@ def get_obs_per_link_end_and_pass(stations, obs_times, obs_values, obs_time_step
     return passes_start_times_dict, passes_end_times_dict, obs_times_per_pass_dict, obs_values_per_pass_dict
 
 
-def get_all_passes_times(real_passes_start_times, real_passes_end_times, simulated_passes_start_times, simulated_passes_end_times):
+def get_all_passes_times(real_passes_start_times, real_passes_end_times, simulated_passes_start_times,
+                         simulated_passes_end_times):
     passes_start_times = []
     passes_end_times = []
 

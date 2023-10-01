@@ -54,7 +54,7 @@ def fit_sgp4_solution(metadata: str, propagation_time_in_days: float, old_yml=Fa
 
     # Define accelerations exerted on Delfi
     # Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
-    acceleration_models = dict(
+    accelerations = dict(
         Sun={
             'point_mass_gravity': True,
             'solar_radiation_pressure': True
@@ -78,11 +78,8 @@ def fit_sgp4_solution(metadata: str, propagation_time_in_days: float, old_yml=Fa
         }
     )
 
-    # Create accelerations
-    accelerations = create_accelerations(acceleration_models, bodies)
-
     # Create propagator settings
-    propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
+    propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, bodies, accelerations)
 
     # Define ideal position observation settings
     link_ends = dict()
