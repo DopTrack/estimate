@@ -9,6 +9,7 @@ from utility_functions.tle import *
 from utility_functions.data import extract_tar
 from estimation_functions.observations_data import *
 from estimation_functions.estimation import *
+from fit_sgp4_solution import fit_sgp4_solution
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -27,23 +28,10 @@ data_folder = 'data/'
 # Metadata input file
 metadata_file = metadata_folder + 'Delfi-C3_32789_202004020904.yml'
 
-# Retrieve initial state from TLE and associated time
-initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_file, old_yml=True)
-
-# Define start of the day (initial time of the propagation)
+# Fit initial state at mid epoch to sgp4 propagation
+initial_epoch, mid_epoch, final_epoch, initial_state, drag_coef = fit_sgp4_solution(metadata_file, propagation_time_in_days=1.0, old_yml=True)
 start_recording_day = get_start_next_day(initial_epoch)
 
-# Define end of the day (final time of the propagation)
-nb_days_to_propagate = 1
-final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
-mid_epoch = (initial_epoch+final_epoch)/2.0
-
-# initial state at mid epoch
-initial_state = propagate_sgp4(metadata_file, initial_epoch, [mid_epoch], old_yml=True)[0, 1:]
-
-print('initial epoch: ', initial_epoch)
-print('initial state TEME: ', initial_state_teme)
-print('final epoch', final_epoch)
 
 # --------------------------------------
 # 1/ Propagate dynamics of Delfi
@@ -51,11 +39,10 @@ print('final epoch', final_epoch)
 
 # Define the propagation environment. This function creates a body "Delfi" with the following characteristics.
 # The Earth, Sun and Moon are also created, with default settings (gravity field, ephemeris, rotation, etc.)
-mass_delfi = 2.2
-ref_area_delfi = 0.035
-drag_coefficient_delfi = get_drag_coefficient(mass_delfi, ref_area_delfi, b_star_coef, from_tle=True)
-srp_coefficient_delfi = 1.2
-bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
+mass = 2.2
+ref_area = 0.035
+srp_coef = 1.2
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef)
 
 # Define accelerations exerted on Delfi
 # The following can be modified. Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body

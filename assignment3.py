@@ -16,6 +16,7 @@ from estimation_functions.observations_data import *
 
 from utility_functions.time import *
 from utility_functions.tle import *
+from fit_sgp4_solution import fit_sgp4_solution
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -63,27 +64,8 @@ indices_files_to_load = [0,
                          # 21]
 
 
-# Retrieve initial epoch and state of the first pass
-# initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_folder + metadata[0])
-# print('initial_epoch', initial_epoch)
-# print('initial_state_teme', initial_state_teme)
-# print('b_star_coef', b_star_coef)
-initial_epoch = 662681610.0000188
-initial_state_teme = np.array([2.24031264e6, 6.48506990e6, -1.59193504e2, 9.17424053e2, -3.25519860e2, 7.56370783e3])
-b_star_coef = 0.0001178
-start_recording_day = get_start_next_day(initial_epoch)
-
-
-# Calculate final propagation_functions epoch
-nb_days_to_propagate = 9
-final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
-mid_epoch = (initial_epoch+final_epoch)/2.0
-
-# initial state at mid epoch
-initial_state = propagate_sgp4(metadata_folder + metadata[0], initial_epoch, [mid_epoch], old_yml=True)[0, 1:]
-
-print('initial_epoch', initial_epoch)
-print('final_epoch', final_epoch)
+# fit initial state at mid epoch to sgp4 propagation
+initial_epoch, mid_epoch, final_epoch, initial_state, drag_coef = fit_sgp4_solution(metadata_folder + metadata[0], propagation_time_in_days=9.0, old_yml=True)
 
 # Retrieve recording start epochs
 recording_start_times = extract_recording_start_times_old_yml(metadata_folder, [metadata[i] for i in indices_files_to_load])
@@ -97,20 +79,11 @@ passes_start_times, passes_end_times, observation_times, observations_set = load
 # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
 arc_start_times, arc_mid_times, arc_end_times = define_arcs('per_3_days', passes_start_times, passes_end_times)
 
-print('arc_start_times', arc_start_times)
-print('arc_end_times', arc_end_times)
-
-print('passes_start_times', passes_start_times)
-print('passes_end_times', passes_end_times)
-
-
 # Define propagation_functions environment
-mass_delfi = 2.2
-ref_area_delfi = 0.08
-drag_coefficient_delfi = get_drag_coefficient(mass_delfi, ref_area_delfi, b_star_coef, from_tle=False)
-print('Cd from TLE', drag_coefficient_delfi)
-srp_coefficient_delfi = 1.2
-bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=False)
+mass = 2.2
+ref_area = 0.08
+srp_coef = 1.2
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=False)
 
 # Define accelerations exerted on Delfi
 # Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
@@ -144,7 +117,7 @@ arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
 
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
-bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi, multi_arc_ephemeris=True)
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=True)
 accelerations = create_accelerations(acceleration_models, bodies)
 
 real_mu = bodies.get("Earth").gravity_field_model.gravitational_parameter

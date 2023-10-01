@@ -23,8 +23,7 @@ def define_body_settings(multi_arc_ephemeris=False):
     # Create default body settings for bodies_to_create, with "Earth"/"J2000" as the global frame origin and orientation
     global_frame_origin = "SSB"
     global_frame_orientation = "J2000"
-    body_settings = environment_setup.get_default_body_settings(bodies_to_create, global_frame_origin,
-                                                                global_frame_orientation)
+    body_settings = environment_setup.get_default_body_settings(bodies_to_create, global_frame_origin, global_frame_orientation)
 
     body_settings.add_empty_settings("Delfi")
     body_state_history = dict()
