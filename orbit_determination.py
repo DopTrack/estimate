@@ -7,6 +7,8 @@ from fit_sgp4_solution import fit_sgp4_solution
 from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.numerical_simulation import estimation_setup
 
+from matplotlib import pyplot as plt
+
 
 def perform_orbit_determination(data_folder: str, metadata: list[str], data: list[str], process_strategy="per_pass", nb_iterations=10, old_yml=False, old_obs_format=False):
 
@@ -20,7 +22,7 @@ def perform_orbit_determination(data_folder: str, metadata: list[str], data: lis
     bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=False)
 
     # Load and process observations
-    recording_start_times = extract_recording_start_times_yml(data_folder, metadata, old_yml=False)
+    recording_start_times = extract_recording_start_times_yml(data_folder, metadata, old_yml=old_yml)
     passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, recording_start_times, old_obs_format)
 
     # Define tracking arcs and retrieve the corresponding arc starting times
@@ -75,6 +77,12 @@ def perform_orbit_determination(data_folder: str, metadata: list[str], data: lis
     errors = pod_output.formal_errors
     residuals = pod_output.residual_history
     updated_parameters = parameters_to_estimate.parameter_vector
+
+    plt.figure(figsize=(9, 5))
+    plt.imshow(np.abs(pod_output.correlations), aspect='auto', interpolation='none')
+    plt.colorbar()
+    plt.tight_layout()
+    plt.show()
 
     return original_parameters, updated_parameters, errors, residuals[:, -1]
 

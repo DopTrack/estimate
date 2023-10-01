@@ -27,8 +27,6 @@ from tudatpy.kernel.numerical_simulation import estimation_setup
 from tudatpy.kernel.astro import element_conversion
 from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 
-j2000_days = 2451545.0
-
 # Define import folder
 metadata_folder = 'nayif_data/' # 'metadata/'
 data_folder = 'nayif_data/'

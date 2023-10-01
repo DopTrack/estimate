@@ -22,8 +22,6 @@ from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.kernel.numerical_simulation import estimation_setup
 from tudatpy.kernel.astro import element_conversion
 
-j2000_days = 2451545.0
-
 # Extract data
 extract_tar("./metadata.tar.xz")
 extract_tar("./data.tar.xz")
