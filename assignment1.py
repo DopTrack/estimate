@@ -152,11 +152,11 @@ metadata = ['Delfi-C3_32789_202004020904.yml', 'Delfi-C3_32789_202004021953.yml'
 data = ['Delfi-C3_32789_202004020904.DOP1C', 'Delfi-C3_32789_202004021953.DOP1C']
 
 # Compute recording start times
-recording_start_times = extract_recording_start_times_old_yml(metadata_folder, metadata)
+recording_start_times = extract_recording_start_times_yml(metadata_folder, metadata, old_yml=True)
 
 # Process observations.
 # This loads the recorded observations and retrieve the start of each tracking pass
-passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, recording_start_times)
+passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, recording_start_times, old_obs_format=True)
 
 # Retrieve measured Doppler values
 real_doppler = observations_set.concatenated_observations

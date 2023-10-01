@@ -11,35 +11,44 @@ from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
 import yaml
 
 
-def extract_recording_start_times_old_yml(folder: str, filenames: list[str]) -> list[float]:
+# def extract_recording_start_times_old_yml(folder: str, filenames: list[str]) -> list[float]:
+#     j2000_days = 2451545.0
+#     start_recording_times = []
+#
+#     for filename in filenames:
+#         with open(folder + filename, 'r') as metafile:
+#             metadata = yaml.load(metafile, Loader=yaml.FullLoader)
+#         time_pps = metadata['Sat']['Record']['time pps']
+#         rx_time = metadata['Sat']['uhd']['rx_time']
+#         julian_date_time_pps = jday(time_pps.year, int(time_pps.month), int(time_pps.day), int(time_pps.hour),
+#                                     int(time_pps.minute), int(time_pps.second))
+#         time_pps = (julian_date_time_pps - j2000_days) * 86400.0
+#         start_recording_times.append(time_pps + rx_time)
+#
+#     return start_recording_times
+
+
+def extract_recording_start_times_yml(folder: str, filenames: list[str], old_yml=False) -> list[float]:
     j2000_days = 2451545.0
     start_recording_times = []
 
     for filename in filenames:
         with open(folder + filename, 'r') as metafile:
             metadata = yaml.load(metafile, Loader=yaml.FullLoader)
-        time_pps = metadata['Sat']['Record']['time pps']
-        rx_time = metadata['Sat']['uhd']['rx_time']
-        julian_date_time_pps = jday(time_pps.year, int(time_pps.month), int(time_pps.day), int(time_pps.hour),
-                                    int(time_pps.minute), int(time_pps.second))
-        time_pps = (julian_date_time_pps - j2000_days) * 86400.0
-        start_recording_times.append(time_pps + rx_time)
 
-    return start_recording_times
+        if old_yml:
+            time_pps = metadata['Sat']['Record']['time pps']
+            rx_time = metadata['Sat']['uhd']['rx_time']
+            julian_date_time_pps = jday(time_pps.year, int(time_pps.month), int(time_pps.day), int(time_pps.hour),
+                                        int(time_pps.minute), int(time_pps.second))
+            time_pps = (julian_date_time_pps - j2000_days) * 86400.0
+            start_recording_times.append(time_pps + rx_time)
 
-
-def extract_recording_start_times_yml(folder: str, filenames: list[str]) -> list[float]:
-    j2000_days = 2451545.0
-    start_recording_times = []
-
-    for filename in filenames:
-        with open(folder + filename, 'r') as metafile:
-            metadata = yaml.load(metafile, Loader=yaml.FullLoader)
-
-        time = metadata["tracking"]["epoch"]
-        julian_date = jday(time.year, int(time.month), int(time.day), int(time.hour), int(time.minute),
-                           int(0.0)) + float(time.second) / 86400.0
-        start_recording_times.append((julian_date - j2000_days) * 86400.0)
+        else:
+            time = metadata["tracking"]["epoch"]
+            julian_date = jday(time.year, int(time.month), int(time.day), int(time.hour), int(time.minute),
+                               int(0.0)) + float(time.second) / 86400.0
+            start_recording_times.append((julian_date - j2000_days) * 86400.0)
 
     return start_recording_times
 
@@ -79,13 +88,13 @@ def process_observations_new(filename: str, fraction_discarded: float = 0.1) -> 
     return np.array(observations)
 
 
-def load_and_format_observations(data_folder, data, recording_start_times, new_obs_format=False):
+def load_and_format_observations(data_folder, data, recording_start_times, old_obs_format=False):
     passes_start_times = []
     passes_end_times = []
     existing_data = np.empty((0, 2))
 
     for k in range(len(data)):
-        if not new_obs_format:
+        if old_obs_format:
             data_set = process_observations_old(data_folder + data[k])
         else:
             data_set = process_observations_new(data_folder + data[k])

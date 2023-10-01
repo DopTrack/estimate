@@ -68,11 +68,11 @@ indices_files_to_load = [0,
 initial_epoch, mid_epoch, final_epoch, initial_state, drag_coef = fit_sgp4_solution(metadata_folder + metadata[0], propagation_time_in_days=9.0, old_yml=True)
 
 # Retrieve recording start epochs
-recording_start_times = extract_recording_start_times_old_yml(metadata_folder, [metadata[i] for i in indices_files_to_load])
+recording_start_times = extract_recording_start_times_yml(metadata_folder, [metadata[i] for i in indices_files_to_load], old_yml=True)
 
 # Load and process observations
 passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
-    data_folder, [data[i] for i in indices_files_to_load], recording_start_times, new_obs_format=True)
+    data_folder, [data[i] for i in indices_files_to_load], recording_start_times, old_obs_format=False)
 
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
