@@ -23,8 +23,7 @@ def define_body_settings(multi_arc_ephemeris=False):
     # Create default body settings for bodies_to_create, with "Earth"/"J2000" as the global frame origin and orientation
     global_frame_origin = "SSB"
     global_frame_orientation = "J2000"
-    body_settings = environment_setup.get_default_body_settings(bodies_to_create, global_frame_origin,
-                                                                global_frame_orientation)
+    body_settings = environment_setup.get_default_body_settings(bodies_to_create, global_frame_origin, global_frame_orientation)
 
     body_settings.add_empty_settings("Delfi")
     body_state_history = dict()
@@ -59,13 +58,15 @@ def define_body_settings(multi_arc_ephemeris=False):
     return body_settings
 
 
-def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, multi_arc_ephemeris=False):
+def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, multi_arc_ephemeris=False, tabulated_ephemeris={ }):
 
     # Load spice kernels
     spice.load_standard_kernels()
 
     # Define body settings
     body_settings = define_body_settings(multi_arc_ephemeris)
+    if tabulated_ephemeris:
+        body_settings.get("Delfi").ephemeris_settings = environment_setup.ephemeris.tabulated(tabulated_ephemeris, "Earth", "J2000")
 
     # Create system of bodies
     bodies = environment_setup.create_system_of_bodies(body_settings)
