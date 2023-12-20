@@ -82,11 +82,12 @@ def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, 
     environment_setup.add_aerodynamic_coefficient_interface(bodies, "Delfi", aero_coefficient_settings)
 
     # Create radiation pressure settings
-    occulting_bodies = ["Earth"]
-    radiation_pressure_settings = environment_setup.radiation_pressure.cannonball(
-        "Sun", reference_area, srp_coefficient, occulting_bodies)
+    occulting_bodies_dict = dict()
+    occulting_bodies_dict["Sun"] = ["Earth"]
+    radiation_pressure_settings = environment_setup.radiation_pressure.cannonball_radiation_target(
+        reference_area, srp_coefficient, occulting_bodies_dict)
 
     # Add the radiation pressure interface to the environment
-    environment_setup.add_radiation_pressure_interface(bodies, "Delfi", radiation_pressure_settings)
+    environment_setup.add_radiation_pressure_target_model(bodies, "Delfi", radiation_pressure_settings)
 
     return bodies

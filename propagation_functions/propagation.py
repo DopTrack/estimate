@@ -48,7 +48,7 @@ def create_accelerations(acceleration_models, bodies):
         if acceleration_models['Sun']["point_mass_gravity"]:
             accelerations_due_to_sun.append(propagation_setup.acceleration.point_mass_gravity())
         if acceleration_models['Sun']["solar_radiation_pressure"]:
-            accelerations_due_to_sun.append(propagation_setup.acceleration.cannonball_radiation_pressure())
+            accelerations_due_to_sun.append(propagation_setup.acceleration.radiation_pressure())
 
     accelerations_due_to_moon = []
     if "Moon" in acceleration_models:
@@ -107,7 +107,7 @@ def retrieve_accelerations_to_save(acceleration_models):
             accelerations_ids.append("point mass gravity Sun")
         if acceleration_models['Sun']["solar_radiation_pressure"]:
             dependent_variables.append(propagation_setup.dependent_variable.single_acceleration_norm(
-                propagation_setup.acceleration.cannonball_radiation_pressure_type, "Delfi", "Sun"))
+                propagation_setup.acceleration.radiation_pressure_type, "Delfi", "Sun"))
             accelerations_ids.append("solar radiation pressure Sun")
 
     if "Moon" in acceleration_models:
