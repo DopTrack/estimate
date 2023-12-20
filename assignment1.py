@@ -9,6 +9,7 @@ from utility_functions.tle import *
 from utility_functions.data import extract_tar
 from estimation_functions.observations_data import *
 from estimation_functions.estimation import *
+from fit_sgp4_solution import fit_sgp4_solution
 
 # Load tudatpy modules
 from tudatpy.kernel import constants
@@ -27,19 +28,10 @@ data_folder = 'data/'
 # Metadata input file
 metadata_file = metadata_folder + 'Delfi-C3_32789_202004020904.yml'
 
-# Retrieve initial state from TLE and associated time
-initial_epoch, initial_state_teme, b_star_coef = get_tle_initial_conditions(metadata_file)
-
-# Define start of the day (initial time of the propagation)
+# Fit initial state at mid epoch to sgp4 propagation
+initial_epoch, mid_epoch, final_epoch, initial_state, drag_coef = fit_sgp4_solution(metadata_file, propagation_time_in_days=1.0, old_yml=True)
 start_recording_day = get_start_next_day(initial_epoch)
 
-# Define end of the day (final time of the propagation)
-nb_days_to_propagate = 1
-final_epoch = start_recording_day + nb_days_to_propagate * 86400.0
-
-print('initial epoch: ', initial_epoch)
-print('initial state TEME: ', initial_state_teme)
-print('final epoch', final_epoch)
 
 # --------------------------------------
 # 1/ Propagate dynamics of Delfi
@@ -47,18 +39,14 @@ print('final epoch', final_epoch)
 
 # Define the propagation environment. This function creates a body "Delfi" with the following characteristics.
 # The Earth, Sun and Moon are also created, with default settings (gravity field, ephemeris, rotation, etc.)
-mass_delfi = 2.2
-ref_area_delfi = 0.035
-drag_coefficient_delfi = get_drag_coefficient(mass_delfi, ref_area_delfi, b_star_coef, from_tle=True)
-srp_coefficient_delfi = 1.2
-bodies = define_environment(mass_delfi, ref_area_delfi, drag_coefficient_delfi, srp_coefficient_delfi)
-
-# Set Delfi's initial state to the TLE prediction
-initial_state = element_conversion.teme_state_to_j2000(initial_epoch, initial_state_teme)
+mass = 2.2
+ref_area = 0.035
+srp_coef = 1.2
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef)
 
 # Define accelerations exerted on Delfi
 # The following can be modified. Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
-acceleration_models = dict(
+accelerations = dict(
     Sun={
         'point_mass_gravity': True,
         'solar_radiation_pressure': True
@@ -81,17 +69,16 @@ acceleration_models = dict(
         'point_mass_gravity': True
     }
 )
-accelerations, accelerations_to_save, accelerations_ids = create_accelerations(acceleration_models, bodies,
-                                                                               save_accelerations=True)
-
-# Create propagator settings
-propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, accelerations)
 
 # Propagate dynamics of the Delfi satellite from initial_epoch to final_epoch, starting from initial_state
 # The propagation output is given in cartesian and keplerian states, and the latitude/longitude of the spacecraft are also saved.
 cartesian_states, keplerian_states, latitudes, longitudes, saved_accelerations = \
-    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True,
-                            accelerations_to_save)
+    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True)
+
+# Create propagator settings
+accelerations_to_save, accelerations_ids = retrieve_accelerations_to_save(accelerations)
+propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, bodies, accelerations)
+
 
 # Plot propagated orbit
 fig = plt.figure(figsize=(6, 6), dpi=125)
@@ -161,11 +148,15 @@ plt.show()
 # --------------------------------------
 
 # Observation files to be uploaded
+metadata = ['Delfi-C3_32789_202004020904.yml', 'Delfi-C3_32789_202004021953.yml']
 data = ['Delfi-C3_32789_202004020904.DOP1C', 'Delfi-C3_32789_202004021953.DOP1C']
+
+# Compute recording start times
+recording_start_times = extract_recording_start_times_yml(metadata_folder, metadata, old_yml=True)
 
 # Process observations.
 # This loads the recorded observations and retrieve the start of each tracking pass
-passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data)
+passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, recording_start_times, old_obs_format=True)
 
 # Retrieve measured Doppler values
 real_doppler = observations_set.concatenated_observations
@@ -176,7 +167,7 @@ fig = plt.figure(figsize=(6,6), dpi=125)
 ax = fig.add_subplot()
 ax.set_title(f'Doppler')
 ax.plot((np.array(simulated_obs_times) - start_recording_day)/3600, simulated_doppler, label='simulated', color='red', linestyle='none', marker='.')
-ax.plot((np.array(observation_times) - start_recording_day)/3600, convert_frequencies_to_range_rate(real_doppler), label='recorded', color='blue', linestyle='none', marker='.')
+ax.plot((np.array(observation_times) - start_recording_day)/3600, real_doppler, label='recorded', color='blue', linestyle='none', marker='.')
 ax.legend()
 ax.set_xlabel('Time [hours since start of day]')
 ax.set_ylabel('Doppler [m/s]')

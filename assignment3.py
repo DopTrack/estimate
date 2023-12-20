@@ -13,4 +13,3 @@ from tudatpy.numerical_simulation import estimation, estimation_setup
 from tudatpy.numerical_simulation.estimation_setup import observation
 from tudatpy.astro.time_conversion import DateTime
 from tudatpy.astro import element_conversion
-
