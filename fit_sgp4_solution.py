@@ -46,7 +46,7 @@ def fit_sgp4_solution(metadata: str, propagation_time_in_days: float, old_yml=Fa
     ref_area = 0.035
     drag_coef = get_drag_coefficient(mass, ref_area, b_star, from_tle=False)
     srp_coef = 1.2
-    bodies = define_environment(mass, ref_area, drag_coef, srp_coef,
+    bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi",
                                 multi_arc_ephemeris=False, tabulated_ephemeris=dict_solution_sgp4)
 
     # initial state at mid epoch

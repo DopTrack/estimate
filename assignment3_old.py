@@ -81,7 +81,7 @@ arc_start_times, arc_mid_times, arc_end_times = define_arcs('per_3_days', passes
 mass = 2.2
 ref_area = 0.08
 srp_coef = 1.2
-bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=False)
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi", multi_arc_ephemeris=False)
 
 # Define accelerations exerted on Delfi
 # Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body
@@ -115,7 +115,7 @@ arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
 
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
-bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=True)
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi", multi_arc_ephemeris=True)
 
 real_mu = bodies.get("Earth").gravity_field_model.gravitational_parameter
 bodies.get("Earth").gravity_field_model.gravitational_parameter = 1.0 * bodies.get("Earth").gravity_field_model.gravitational_parameter

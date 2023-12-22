@@ -15,6 +15,7 @@ from tudatpy.astro.time_conversion import DateTime
 from tudatpy.astro import element_conversion
 
 # Import doptrack-estimate functions
+from propagation_functions.environment import *
 from estimation_functions.estimation import *
 
 
@@ -27,46 +28,22 @@ delfi_tle = environment.Tle(
     "2 32789 097.4279 136.4027 0011143 218.6381 141.4051 15.07550601649972" #"2 32789 098.0082 179.6267 0015321 307.2977 051.0656 14.81417433    68"
 )
 
-# Set simulation start and end epochs
-simulation_start_epoch = delfi_tle.get_epoch() #DateTime(2020, 4, 1).epoch()
-simulation_end_epoch = simulation_start_epoch + 1.0 * 86400.0 #DateTime(2020, 4, 2).epoch()
-
-# Create default body settings for "Sun", "Earth", "Moon", "Mars", and "Venus"
-bodies_to_create = ["Sun", "Earth", "Moon", "Mars", "Venus"]
-
-# Create default body settings for bodies_to_create, with "Earth"/"J2000" as the global frame origin and orientation
-global_frame_origin = "Earth"
-global_frame_orientation = "J2000"
-body_settings = environment_setup.get_default_body_settings(
-    bodies_to_create, global_frame_origin, global_frame_orientation)
-
-# Create system of bodies
-bodies = environment_setup.create_system_of_bodies(body_settings)
-
-
-# Create vehicle objects.
-bodies.create_empty_body("spacecraft")
-bodies.get("spacecraft").mass = 2.2
-
-# Create aerodynamic coefficient interface settings
-reference_area = (4*0.3*0.1+2*0.1*0.1)/4  # Average projection area of a 3U CubeSat
-drag_coefficient = 1.2
-aero_coefficient_settings = environment_setup.aerodynamic_coefficients.constant(
-    reference_area, [drag_coefficient, 0.0, 0.0]
+next_delfi_tle = environment.Tle(
+    "1 32789U 08021G   20092.14603172 +.00001512 +00000-0 +10336-3 0  9992",
+    "2 32789 097.4277 137.6209 0011263 214.0075 146.0432 15.07555919650162"
 )
-# Add the aerodynamic interface to the environment
-environment_setup.add_aerodynamic_coefficient_interface(bodies, "spacecraft", aero_coefficient_settings)
 
-# Create radiation pressure settings
-reference_area_radiation = 4.0
-radiation_pressure_coefficient = 1.2
-occulting_bodies_dict = dict()
-occulting_bodies_dict["Sun"] = ["Earth"]
-radiation_pressure_settings = environment_setup.radiation_pressure.cannonball_radiation_target(
-    reference_area_radiation, radiation_pressure_coefficient, occulting_bodies_dict)
+# Set simulation start and end epochs
+initial_epoch = delfi_tle.get_epoch() #DateTime(2020, 4, 1).epoch()
+propagation_time = 1.0 * 86400.0
+final_epoch = initial_epoch + propagation_time #DateTime(2020, 4, 2).epoch()
 
-# Add the radiation pressure interface to the environment
-environment_setup.add_radiation_pressure_target_model(bodies, "spacecraft", radiation_pressure_settings)
+# Define propagation environment
+mass = 2.2
+ref_area = (4*0.3*0.1+2*0.1*0.1)/4  # Average projection area of a 3U CubeSat
+drag_coef = 1.2
+srp_coef = 1.2
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "spacecraft", multi_arc_ephemeris=False)
 
 # Define bodies that are propagated
 bodies_to_propagate = ["spacecraft"]
@@ -104,7 +81,10 @@ acceleration_models = propagation_setup.create_acceleration_models(
 
 
 delfi_ephemeris = environment.TleEphemeris("Earth", "J2000", delfi_tle, False)
-initial_state = delfi_ephemeris.cartesian_state(simulation_start_epoch)
+initial_state = delfi_ephemeris.cartesian_state(initial_epoch)
+
+# orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
+# arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
 
 # Create numerical integrator settings
 integrator_settings = propagation_setup.integrator.\
@@ -112,7 +92,7 @@ integrator_settings = propagation_setup.integrator.\
                                 coefficient_set=propagation_setup.integrator.CoefficientSets.rkdp_87)
 
 # Create termination settings
-termination_condition = propagation_setup.propagator.time_termination(simulation_end_epoch)
+termination_condition = propagation_setup.propagator.time_termination(final_epoch)
 
 # Create propagation settings
 propagator_settings = propagation_setup.propagator.translational(
@@ -120,7 +100,7 @@ propagator_settings = propagation_setup.propagator.translational(
     acceleration_models,
     bodies_to_propagate,
     initial_state,
-    simulation_start_epoch,
+    initial_epoch,
     integrator_settings,
     termination_condition
 )
@@ -164,7 +144,7 @@ for link in link_definitions:
     observation_settings_list.append(observation.one_way_doppler_instantaneous(link))
 
 # Define observation simulation times for each link
-observation_times = np.arange(simulation_start_epoch, simulation_end_epoch, 10.0)
+observation_times = np.arange(initial_epoch, final_epoch, 10.0)
 
 observation_simulation_settings = []
 for i in range(nb_artificial_stations+1):
@@ -221,13 +201,18 @@ simulated_observations = estimation.simulate_observations(
 # Save the true parameters to later analyse the error
 truth_parameters = parameters_to_estimate.parameter_vector
 
+
+# Use next TLE update to derive initial state perturbation
+next_delfi_ephemeris = environment.TleEphemeris("Earth", "J2000", next_delfi_tle, False)
+perturbed_initial_state = next_delfi_ephemeris.cartesian_state(initial_epoch)
+
 # Perturb the initial state estimate from the truth (10 m in position; 0.1 m/s in velocity)
 perturbed_parameters = truth_parameters.copy( )
-for i in range(3):
-    perturbed_parameters[i] += 1.0e2 #10.0
-    perturbed_parameters[i+3] += 0.1 #0.01
+perturbed_parameters[:6] = perturbed_initial_state
+# for i in range(3):
+#     perturbed_parameters[i] += 1.0e2 #10.0
+#     perturbed_parameters[i+3] += 0.1 #0.01
 parameters_to_estimate.parameter_vector = perturbed_parameters
-
 initial_parameters_perturbation = perturbed_parameters - truth_parameters
 
 
@@ -251,6 +236,8 @@ estimation_output = estimator.perform_estimation(estimation_input)
 
 true_errors = parameters_to_estimate.parameter_vector - truth_parameters
 formal_errors = estimation_output.formal_errors
+
+
 
 # Print the covariance matrix
 print('initial parameters perturbation', initial_parameters_perturbation)

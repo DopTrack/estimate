@@ -42,7 +42,7 @@ start_recording_day = get_start_next_day(initial_epoch)
 mass = 2.2
 ref_area = 0.035
 srp_coef = 1.2
-bodies = define_environment(mass, ref_area, drag_coef, srp_coef)
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi")
 
 # Define accelerations exerted on Delfi
 # The following can be modified. Warning: point_mass_gravity and spherical_harmonic_gravity accelerations should not be defined simultaneously for a single body

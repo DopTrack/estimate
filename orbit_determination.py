@@ -19,7 +19,7 @@ def perform_orbit_determination(data_folder: str, metadata: list[str], data: lis
     mass = 2.2
     ref_area = 0.035
     srp_coef = 1.2
-    bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=False)
+    bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi", multi_arc_ephemeris=False)
 
     # Load and process observations
     recording_start_times = extract_recording_start_times_yml(data_folder, metadata, old_yml=old_yml)
@@ -36,7 +36,7 @@ def perform_orbit_determination(data_folder: str, metadata: list[str], data: lis
     arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
 
     # Redefine environment to allow for multi-arc dynamics propagation_functions
-    bodies = define_environment(mass, ref_area, drag_coef, srp_coef, multi_arc_ephemeris=True)
+    bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi", multi_arc_ephemeris=True)
 
     # Define multi-arc propagator settings
     multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations)
