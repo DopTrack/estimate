@@ -14,12 +14,22 @@ from tudatpy.numerical_simulation.estimation_setup import observation
 from tudatpy.astro.time_conversion import DateTime
 from tudatpy.astro import element_conversion
 
+# Import doptrack-estimate functions
+from estimation_functions.estimation import *
+
+
 # Load spice kernels
 spice.load_standard_kernels()
 
+# Retrieve the initial state of Delfi-C3 using Two-Line-Elements (TLEs)
+delfi_tle = environment.Tle(
+    "1 32789U 08021G   20090.88491347 +.00001016 +00000-0 +70797-4 0  9997", #"1 32789U 07021G   08119.60740078 -.00000054  00000-0  00000+0 0  9999",
+    "2 32789 097.4279 136.4027 0011143 218.6381 141.4051 15.07550601649972" #"2 32789 098.0082 179.6267 0015321 307.2977 051.0656 14.81417433    68"
+)
+
 # Set simulation start and end epochs
-simulation_start_epoch = DateTime(2000, 1, 1).epoch()
-simulation_end_epoch   = DateTime(2000, 1, 4).epoch()
+simulation_start_epoch = delfi_tle.get_epoch() #DateTime(2020, 4, 1).epoch()
+simulation_end_epoch = simulation_start_epoch + 1.0 * 86400.0 #DateTime(2020, 4, 2).epoch()
 
 # Create default body settings for "Sun", "Earth", "Moon", "Mars", and "Venus"
 bodies_to_create = ["Sun", "Earth", "Moon", "Mars", "Venus"]
@@ -35,8 +45,8 @@ bodies = environment_setup.create_system_of_bodies(body_settings)
 
 
 # Create vehicle objects.
-bodies.create_empty_body("Delfi-C3")
-bodies.get("Delfi-C3").mass = 2.2
+bodies.create_empty_body("spacecraft")
+bodies.get("spacecraft").mass = 2.2
 
 # Create aerodynamic coefficient interface settings
 reference_area = (4*0.3*0.1+2*0.1*0.1)/4  # Average projection area of a 3U CubeSat
@@ -45,7 +55,7 @@ aero_coefficient_settings = environment_setup.aerodynamic_coefficients.constant(
     reference_area, [drag_coefficient, 0.0, 0.0]
 )
 # Add the aerodynamic interface to the environment
-environment_setup.add_aerodynamic_coefficient_interface(bodies, "Delfi-C3", aero_coefficient_settings)
+environment_setup.add_aerodynamic_coefficient_interface(bodies, "spacecraft", aero_coefficient_settings)
 
 # Create radiation pressure settings
 reference_area_radiation = 4.0
@@ -56,10 +66,10 @@ radiation_pressure_settings = environment_setup.radiation_pressure.cannonball_ra
     reference_area_radiation, radiation_pressure_coefficient, occulting_bodies_dict)
 
 # Add the radiation pressure interface to the environment
-environment_setup.add_radiation_pressure_target_model(bodies, "Delfi-C3", radiation_pressure_settings)
+environment_setup.add_radiation_pressure_target_model(bodies, "spacecraft", radiation_pressure_settings)
 
 # Define bodies that are propagated
-bodies_to_propagate = ["Delfi-C3"]
+bodies_to_propagate = ["spacecraft"]
 
 # Define central bodies of propagation
 central_bodies = ["Earth"]
@@ -83,7 +93,7 @@ accelerations_settings_delfi_c3 = dict(
     ])
 
 # Create global accelerations dictionary
-acceleration_settings = {"Delfi-C3": accelerations_settings_delfi_c3}
+acceleration_settings = {"spacecraft": accelerations_settings_delfi_c3}
 
 # Create acceleration models
 acceleration_models = propagation_setup.create_acceleration_models(
@@ -93,13 +103,8 @@ acceleration_models = propagation_setup.create_acceleration_models(
     central_bodies)
 
 
-# Retrieve the initial state of Delfi-C3 using Two-Line-Elements (TLEs)
-delfi_tle = environment.Tle(
-    "1 32789U 07021G   08119.60740078 -.00000054  00000-0  00000+0 0  9999",
-    "2 32789 098.0082 179.6267 0015321 307.2977 051.0656 14.81417433    68"
-)
-delfi_ephemeris = environment.TleEphemeris( "Earth", "J2000", delfi_tle, False )
-initial_state = delfi_ephemeris.cartesian_state( simulation_start_epoch )
+delfi_ephemeris = environment.TleEphemeris("Earth", "J2000", delfi_tle, False)
+initial_state = delfi_ephemeris.cartesian_state(simulation_start_epoch)
 
 # Create numerical integrator settings
 integrator_settings = propagation_setup.integrator.\
@@ -121,83 +126,81 @@ propagator_settings = propagation_setup.propagator.translational(
 )
 
 
-# Define the position of the ground station on Earth
-station_altitude = 0.0
-delft_latitude = np.deg2rad(52.00667)
-delft_longitude = np.deg2rad(4.35556)
+# Create the DopTrack ground station
+define_doptrack_station(bodies)
 
-# Add the ground station to the environment
-environment_setup.add_ground_station(
-    bodies.get_body("Earth"),
-    "TrackingStation",
-    [station_altitude, delft_latitude, delft_longitude],
-    element_conversion.geodetic_position_type)
+# Create artificial ground stations
+nb_artificial_stations = 1
+stations_lat = [-25.0]
+stations_long = [134.0]
 
-environment_setup.add_ground_station(
-    bodies.get_body("Earth"),
-    "Station1",
-    [0.0, np.deg2rad(-25.0), np.deg2rad(134.0)],
-    element_conversion.geodetic_position_type)
+stations_names = []
+for i in range(nb_artificial_stations):
+    station_name = "Station" + str(i+1)
+
+    environment_setup.add_ground_station(
+        bodies.get_body("Earth"),
+        station_name,
+        [0.0, np.deg2rad(stations_lat[i]), np.deg2rad(stations_long[i])],
+        element_conversion.geodetic_position_type)
+
 
 # Define the uplink link ends for one-way observable
-link_ends1 = dict()
-link_ends1[observation.transmitter] = observation.body_reference_point_link_end_id("Earth", "TrackingStation")
-link_ends1[observation.receiver] = observation.body_origin_link_end_id("Delfi-C3")
+link_definitions = []
+for i in range(nb_artificial_stations+1):
+    link_ends = dict()
+    if i == 0:
+        link_ends[observation.transmitter] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+    else:
+        link_ends[observation.transmitter] = observation.body_reference_point_link_end_id("Earth", "Station"+str(i))
+    link_ends[observation.receiver] = observation.body_origin_link_end_id("spacecraft")
 
-link_ends2 = dict()
-link_ends2[observation.transmitter] = observation.body_reference_point_link_end_id("Earth", "Station1")
-link_ends2[observation.receiver] = observation.body_origin_link_end_id("Delfi-C3")
+    link_definitions.append(observation.LinkDefinition(link_ends))
+
 
 # Create observation settings for each link/observable
-link_definition1 = observation.LinkDefinition(link_ends1)
-link_definition2 = observation.LinkDefinition(link_ends2)
-observation_settings_list = [observation.one_way_doppler_instantaneous(link_definition1),
-                             observation.one_way_doppler_instantaneous(link_definition2)]
+observation_settings_list = []
+for link in link_definitions:
+    observation_settings_list.append(observation.one_way_doppler_instantaneous(link))
 
-# Define observation simulation times for each link (separated by steps of 1 minute)
-observation_times = np.arange(simulation_start_epoch, simulation_end_epoch, 60.0)
-observation_simulation_settings1 = observation.tabulated_simulation_settings(
-    observation.one_way_instantaneous_doppler_type,
-    link_definition1,
-    observation_times
-)
+# Define observation simulation times for each link
+observation_times = np.arange(simulation_start_epoch, simulation_end_epoch, 10.0)
 
-observation_simulation_settings2 = observation.tabulated_simulation_settings(
-    observation.one_way_instantaneous_doppler_type,
-    link_definition2,
-    observation_times
-)
+observation_simulation_settings = []
+for i in range(nb_artificial_stations+1):
+    observation_simulation_settings.append(observation.tabulated_simulation_settings(
+        observation.one_way_instantaneous_doppler_type, link_definitions[i], observation_times))
 
-# Add noise levels of roughly 1.0E-3 [m/s] and add this as Gaussian noise to the observation
+# Add Gaussian noise to simulated observations
 noise_level = 1.0E-3
 observation.add_gaussian_noise_to_observable(
-    [observation_simulation_settings1, observation_simulation_settings2],
+    observation_simulation_settings,
     noise_level,
     observation.one_way_instantaneous_doppler_type
 )
 
 # Create viability settings
-viability_setting = observation.elevation_angle_viability(["Earth", "TrackingStation"], np.deg2rad(15))
-viability_setting2 = observation.elevation_angle_viability(["Earth", "Station1"], np.deg2rad(15))
+for i in range(nb_artificial_stations+1):
+    if i == 0:
+        viability_setting = observation.elevation_angle_viability(["Earth", "DopTrackStation"], np.deg2rad(15))
+    else:
+        viability_setting = observation.elevation_angle_viability(["Earth", "Station" + str(i)], np.deg2rad(15))
 
-observation.add_viability_check_to_observable_for_link_ends(
-    [observation_simulation_settings1],
-    [viability_setting],
-    observation.one_way_instantaneous_doppler_type,
-    link_definition1)
+    observation.add_viability_check_to_observable_for_link_ends(
+        [observation_simulation_settings[i]],
+        [viability_setting],
+        observation.one_way_instantaneous_doppler_type,
+        link_definitions[i])
 
-observation.add_viability_check_to_observable_for_link_ends(
-    [observation_simulation_settings2],
-    [viability_setting2],
-    observation.one_way_instantaneous_doppler_type,
-    link_definition2)
+
+
 
 # Setup parameters settings to propagate the state transition matrix
 parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
 
 # Add estimated parameters to the sensitivity matrix that will be propagated
 parameter_settings.append(estimation_setup.parameter.gravitational_parameter("Earth"))
-parameter_settings.append(estimation_setup.parameter.constant_drag_coefficient("Delfi-C3"))
+parameter_settings.append(estimation_setup.parameter.constant_drag_coefficient("spacecraft"))
 
 # Create the parameters that will be estimated
 parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
@@ -211,7 +214,7 @@ estimator = numerical_simulation.Estimator(
 
 # Simulate required observations
 simulated_observations = estimation.simulate_observations(
-    [observation_simulation_settings1, observation_simulation_settings2],
+    observation_simulation_settings,
     estimator.observation_simulators,
     bodies)
 
