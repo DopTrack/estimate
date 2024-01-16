@@ -79,7 +79,7 @@ def fit_sgp4_solution(metadata: str, propagation_time_in_days: float, old_yml=Fa
     )
 
     # Create propagator settings
-    propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, bodies, accelerations)
+    propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, bodies, accelerations, "Delfi")
 
     # Define ideal position observation settings
     link_ends = dict()

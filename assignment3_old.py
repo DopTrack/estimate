@@ -70,7 +70,7 @@ recording_start_times = extract_recording_start_times_yml(metadata_folder, [meta
 
 # Load and process observations
 passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
-    data_folder, [data[i] for i in indices_files_to_load], recording_start_times, old_obs_format=False)
+    "Delfi", data_folder, [data[i] for i in indices_files_to_load], recording_start_times, old_obs_format=False)
 
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
@@ -110,8 +110,8 @@ accelerations = dict(
 )
 
 # Propagate dynamics and retrieve Delfi's initial state at the start of each arc
-orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
-arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
+orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, "Delfi")
+arc_wise_initial_states = get_initial_states(bodies, arc_mid_times, "Delfi")
 
 
 # Redefine environment to allow for multi-arc dynamics propagation_functions
@@ -121,7 +121,8 @@ real_mu = bodies.get("Earth").gravity_field_model.gravitational_parameter
 bodies.get("Earth").gravity_field_model.gravitational_parameter = 1.0 * bodies.get("Earth").gravity_field_model.gravitational_parameter
 
 # Define multi-arc propagator settings
-multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations)
+multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times,
+                                                                      bodies, accelerations, "Delfi")
 
 # Create the DopTrack station
 define_doptrack_station(bodies)
@@ -149,11 +150,11 @@ Doppler_models = dict(
         'time_interval': bias_definition
     }
 )
-observation_settings = define_observation_settings(Doppler_models, passes_start_times, arc_start_times)
+observation_settings = define_observation_settings("Delfi", Doppler_models, passes_start_times, arc_start_times)
 
 # Define parameters to estimate
 parameters_list = dict(
-    initial_state_delfi={
+    initial_state={
         'estimate': True
     },
     absolute_bias={
@@ -189,8 +190,8 @@ parameters_list = dict(
         'type': 'global' # can only be global
     }
 )
-parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
-                                           arc_start_times, arc_mid_times, [(get_link_ends_id("DopTrackStation"), passes_start_times)], Doppler_models)
+parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, "Delfi",
+                                           arc_start_times, arc_mid_times, [(get_link_ends_id("DopTrackStation", "Delfi"), passes_start_times)], Doppler_models)
 estimation_setup.print_parameter_names(parameters_to_estimate)
 
 
@@ -198,7 +199,7 @@ estimation_setup.print_parameter_names(parameters_to_estimate)
 estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
 
 # Simulate (ideal) observations
-ideal_observations = simulate_observations_from_estimator(observation_times, estimator, bodies)
+ideal_observations = simulate_observations_from_estimator("Delfi", observation_times, estimator, bodies)
 
 # Save the initial parameters values to later analyse the error
 initial_parameters = parameters_to_estimate.parameter_vector

@@ -88,7 +88,7 @@ def process_observations_new(filename: str, fraction_discarded: float = 0.1) -> 
     return np.array(observations)
 
 
-def load_and_format_observations(data_folder, data, recording_start_times, old_obs_format=False):
+def load_and_format_observations(spacecraft_name, data_folder, data, recording_start_times, old_obs_format=False):
     passes_start_times = []
     passes_end_times = []
     existing_data = np.empty((0, 2))
@@ -112,7 +112,7 @@ def load_and_format_observations(data_folder, data, recording_start_times, old_o
     # Define link ends
     link_ends = dict()
     link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
-    link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+    link_ends[observation.transmitter] = observation.body_origin_link_end_id(spacecraft_name)
 
     # Set existing observations
     existing_observation_set = (link_ends, (np.array(obs_values), obs_times))

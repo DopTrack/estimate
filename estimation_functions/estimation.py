@@ -85,41 +85,31 @@ def define_station(bodies, station, coordinates):
                                          element_conversion.geodetic_position_type)
 
 
-def get_link_ends_id(station):
+def get_link_ends_id(station, spacecraft_name):
 
     # Define the uplink link ends for one-way observable
     link_ends = dict()
     link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", station)
-    link_ends[observation.transmitter] = observation.body_origin_link_end_id("Delfi")
+    link_ends[observation.transmitter] = observation.body_origin_link_end_id(spacecraft_name)
 
     return link_ends
 
 
-def get_link_ends(station):
-    return observation.link_definition(get_link_ends_id(station))
+def get_link_ends(station, spacecraft_name):
+    return observation.link_definition(get_link_ends_id(station, spacecraft_name))
 
 
-def define_all_link_ends(stations):
-    link_ends = []
-    link_ends_def = []
-    for k in range(len(stations)):
-        link_ends.append(get_link_ends_id(stations[k]))
-        link_ends_def.append(get_link_ends(link_ends[k]))
-
-    return link_ends, link_ends_def
-
-
-def define_ideal_doppler_settings(stations):
+def define_ideal_doppler_settings(stations, spacecraft_name):
 
     # Create observation settings for each link/observable
     observation_settings = []
     for k in range(len(stations)):
-        observation_settings.append(observation.one_way_doppler_instantaneous(get_link_ends(stations[k])))
+        observation_settings.append(observation.one_way_doppler_instantaneous(get_link_ends(stations[k], spacecraft_name)))
 
     return observation_settings
 
 
-def define_observation_settings(Doppler_models={}, passes_start_times=[], arc_start_times=[]):
+def define_observation_settings(spacecraft_name, Doppler_models={}, passes_start_times=[], arc_start_times=[]):
 
     combined_biases = []
 
@@ -228,7 +218,7 @@ def define_observation_settings(Doppler_models={}, passes_start_times=[], arc_st
     biases = observation.combined_bias(combined_biases)
 
     # Create observation settings for each link/observable
-    observation_settings = [observation.one_way_open_loop_doppler(get_link_ends("DopTrackStation"), bias_settings=biases)]
+    observation_settings = [observation.one_way_open_loop_doppler(get_link_ends("DopTrackStation", spacecraft_name), bias_settings=biases)]
 
     return observation_settings
 
@@ -341,13 +331,13 @@ def define_biases(Doppler_models={}, passes_start_times=[], arc_start_times=[]):
     return observation.combined_bias(combined_biases)
 
 
-def define_parameters(parameters_list, bodies, propagator_settings, initial_time, arc_start_times, arc_mid_times, pass_times_per_linkend, obs_models={}):
+def define_parameters(parameters_list, bodies, propagator_settings, spacecraft_name, arc_start_times, arc_mid_times, pass_times_per_linkend, obs_models={}):
 
     parameter_settings = []
 
     # Initial states
-    if "initial_state_delfi" in parameters_list:
-        if parameters_list.get('initial_state_delfi').get('estimate'):
+    if "initial_state" in parameters_list:
+        if parameters_list.get('initial_state').get('estimate'):
             initial_states_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies, arc_mid_times)
             for settings in initial_states_settings:
                 parameter_settings.append(settings)
@@ -413,21 +403,21 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
     if "drag_coefficient" in parameters_list:
         if parameters_list.get('drag_coefficient').get('estimate'):
             if parameters_list.get('drag_coefficient').get('type') == 'per_pass':
-                parameter_settings.append(estimation_setup.parameter.arcwise_constant_drag_coefficient("Delfi", pass_times_per_linkend[k][1]))
+                parameter_settings.append(estimation_setup.parameter.arcwise_constant_drag_coefficient(spacecraft_name, pass_times_per_linkend[k][1]))
             elif parameters_list.get('drag_coefficient').get('type') == 'per_arc':
-                parameter_settings.append(estimation_setup.parameter.arcwise_constant_drag_coefficient("Delfi", arc_start_times))
+                parameter_settings.append(estimation_setup.parameter.arcwise_constant_drag_coefficient(spacecraft_name, arc_start_times))
             elif parameters_list.get('drag_coefficient').get('type') == 'global':
-                parameter_settings.append(estimation_setup.parameter.constant_drag_coefficient("Delfi"))
+                parameter_settings.append(estimation_setup.parameter.constant_drag_coefficient(spacecraft_name))
 
     # Solar radiation pressure coefficient(s)
     if "srp_coefficient" in parameters_list:
         if parameters_list.get('srp_coefficient').get('estimate'):
             if parameters_list.get('srp_coefficient').get('type') == 'per_pass':
-                parameter_settings.append(estimation_setup.parameter.arcwise_radiation_pressure_coefficient("Delfi", pass_times_per_linkend[k][1]))
+                parameter_settings.append(estimation_setup.parameter.arcwise_radiation_pressure_coefficient(spacecraft_name, pass_times_per_linkend[k][1]))
             elif parameters_list.get('srp_coefficient').get('type') == 'per_arc':
-                parameter_settings.append(estimation_setup.parameter.arcwise_radiation_pressure_coefficient("Delfi", arc_start_times))
+                parameter_settings.append(estimation_setup.parameter.arcwise_radiation_pressure_coefficient(spacecraft_name, arc_start_times))
             elif parameters_list.get('srp_coefficient').get('type') == 'global':
-                parameter_settings.append(estimation_setup.parameter.radiation_pressure_coefficient("Delfi"))
+                parameter_settings.append(estimation_setup.parameter.radiation_pressure_coefficient(spacecraft_name))
 
     # Gravitational parameter
     if "gravitational_parameter" in parameters_list:
@@ -458,34 +448,34 @@ def define_parameters(parameters_list, bodies, propagator_settings, initial_time
     return parameters_to_estimate
 
 
-def simulate_observations(observation_times, observation_settings, propagator_settings, bodies, initial_time, min_elevation_angle: float = 10):
+def simulate_observations(spacecraft_name, observation_times, observation_settings, propagator_settings, bodies, initial_time, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_ends("DopTrackStation")]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_ends("DopTrackStation", spacecraft_name)]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
     # The actual simulation of the observations requires Observation Simulators, which are created automatically by the Estimator object.
     # Therefore, the observations cannot be simulated before the creation of an Estimator object.
-    integrator_settings = create_integrator_settings(initial_time)
+    integrator_settings = create_integrator_settings()
     estimator = create_dummy_estimator(bodies, propagator_settings, integrator_settings, observation_settings)
 
     elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition], observation.one_way_instantaneous_doppler_type,
-                                                                get_link_ends("DopTrackStation"))
+                                                                get_link_ends("DopTrackStation", spacecraft_name))
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
 
-def simulate_observations_from_estimator(observation_times, estimator, bodies, min_elevation_angle: float = 10):
+def simulate_observations_from_estimator(spacecraft_name, observation_times, estimator, bodies, min_elevation_angle: float = 10):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_ends("DopTrackStation")]
+    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = [get_link_ends("DopTrackStation", spacecraft_name)]
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         link_ends_per_obs, observation_times, observation.receiver)
 
     elevation_condition = observation.elevation_angle_viability(("Earth", "DopTrackStation"), np.deg2rad(min_elevation_angle))
     observation.add_viability_check_to_observable_for_link_ends(observation_simulation_settings, [elevation_condition],
                                                                 observation.one_way_instantaneous_doppler_type,
-                                                                get_link_ends("DopTrackStation"))
+                                                                get_link_ends("DopTrackStation", spacecraft_name))
 
     return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 

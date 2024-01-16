@@ -73,11 +73,11 @@ accelerations = dict(
 # Propagate dynamics of the Delfi satellite from initial_epoch to final_epoch, starting from initial_state
 # The propagation output is given in cartesian and keplerian states, and the latitude/longitude of the spacecraft are also saved.
 cartesian_states, keplerian_states, latitudes, longitudes, saved_accelerations = \
-    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, True)
+    propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, "Delfi", True)
 
 # Create propagator settings
-accelerations_to_save, accelerations_ids = retrieve_accelerations_to_save(accelerations)
-propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, bodies, accelerations)
+accelerations_to_save, accelerations_ids = retrieve_accelerations_to_save(accelerations, "Delfi")
+propagator_settings = create_propagator_settings(initial_state, initial_epoch, final_epoch, bodies, accelerations, "Delfi")
 
 
 # Plot propagated orbit
@@ -114,7 +114,7 @@ plt.show()
 define_doptrack_station(bodies)
 
 # Define observation settings
-observation_settings = define_ideal_doppler_settings(["DopTrackStation"])
+observation_settings = define_ideal_doppler_settings(["DopTrackStation"], "Delfi")
 
 # Create list of observation times, with one Doppler measurement every 10 seconds
 possible_obs_times = []
@@ -125,7 +125,7 @@ while current_time < final_epoch:
     current_time = current_time + obs_time_step
 
 # Simulate (ideal) observations
-simulated_observations = simulate_observations(possible_obs_times, observation_settings, propagator_settings, bodies, initial_epoch, 0)
+simulated_observations = simulate_observations("Delfi", possible_obs_times, observation_settings, propagator_settings, bodies, initial_epoch, 0)
 
 simulated_obs_times = np.array(simulated_observations.concatenated_times)
 simulated_doppler = simulated_observations.concatenated_observations
@@ -156,7 +156,8 @@ recording_start_times = extract_recording_start_times_yml(metadata_folder, metad
 
 # Process observations.
 # This loads the recorded observations and retrieve the start of each tracking pass
-passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, recording_start_times, old_obs_format=True)
+passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
+    "Delfi", data_folder, data, recording_start_times, old_obs_format=True)
 
 # Retrieve measured Doppler values
 real_doppler = observations_set.concatenated_observations

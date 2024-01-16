@@ -23,7 +23,8 @@ def perform_orbit_determination(data_folder: str, metadata: list[str], data: lis
 
     # Load and process observations
     recording_start_times = extract_recording_start_times_yml(data_folder, metadata, old_yml=old_yml)
-    passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(data_folder, data, recording_start_times, old_obs_format)
+    passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
+        "Delfi", data_folder, data, recording_start_times, old_obs_format)
 
     # Define tracking arcs and retrieve the corresponding arc starting times
     arc_start_times, arc_mid_times, arc_end_times = define_arcs(process_strategy, passes_start_times, passes_end_times)
@@ -32,25 +33,26 @@ def perform_orbit_determination(data_folder: str, metadata: list[str], data: lis
     accelerations = get_default_acceleration_models()
 
     # Propagate dynamics and retrieve Delfi's initial state at the start of each arc
-    orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations)
-    arc_wise_initial_states = get_initial_states(bodies, arc_mid_times)
+    orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, "Delfi")
+    arc_wise_initial_states = get_initial_states(bodies, arc_mid_times, "Delfi")
 
     # Redefine environment to allow for multi-arc dynamics propagation_functions
     bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi", multi_arc_ephemeris=True)
 
     # Define multi-arc propagator settings
-    multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times, bodies, accelerations)
+    multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times,
+                                                                          bodies, accelerations, "Delfi")
 
     # Create the DopTrack station
     define_doptrack_station(bodies)
 
     # Define default observation settings
     doppler_models = get_default_doppler_models()
-    observation_settings = define_observation_settings(doppler_models, passes_start_times, arc_start_times)
+    observation_settings = define_observation_settings("Delfi", doppler_models, passes_start_times, arc_start_times)
 
     # Define parameters to estimate
     parameters_list = dict(
-        initial_state_delfi={
+        initial_state={
             'estimate': True
         },
         absolute_bias={
@@ -60,8 +62,8 @@ def perform_orbit_determination(data_folder: str, metadata: list[str], data: lis
             'estimate': True
         }
     )
-    parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, initial_epoch,
-                                               arc_start_times, arc_mid_times, [(get_link_ends_id("DopTrackStation"), passes_start_times)], doppler_models)
+    parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, "Delfi",
+                                               arc_start_times, arc_mid_times, [(get_link_ends_id("DopTrackStation", "Delfi"), passes_start_times)], doppler_models)
     estimation_setup.print_parameter_names(parameters_to_estimate)
 
     # Create the estimator object

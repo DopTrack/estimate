@@ -48,7 +48,7 @@ def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, 
     # Create system of bodies
     bodies = environment_setup.create_system_of_bodies(body_settings)
 
-    # Create Delfi body
+    # Create spacecraft
     bodies.get(spacecraft_name).mass = mass
 
     # Create aerodynamic coefficient interface settings
