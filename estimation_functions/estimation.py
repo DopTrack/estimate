@@ -331,7 +331,7 @@ def define_biases(Doppler_models={}, passes_start_times=[], arc_start_times=[]):
     return observation.combined_bias(combined_biases)
 
 
-def define_parameters(parameters_list, bodies, propagator_settings, spacecraft_name, arc_start_times, arc_mid_times, pass_times_per_linkend, obs_models={}):
+def define_parameters(parameters_list, bodies, propagator_settings, spacecraft_name, arc_start_times, arc_mid_times, pass_times_per_linkend=[], obs_models={}):
 
     parameter_settings = []
 
