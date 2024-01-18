@@ -11,6 +11,37 @@ from tudatpy.kernel.numerical_simulation import propagation_setup
 from tudatpy.util import result2array
 
 
+def get_arc_times_definition(initial_epoch, final_epoch, arc_duration):
+
+    arc_start_times = [initial_epoch]
+    arc_end_times = []
+    current_arc_time = initial_epoch
+    while final_epoch - current_arc_time > arc_duration:
+        current_arc_time += arc_duration
+        arc_end_times.append(current_arc_time)
+        arc_start_times.append(current_arc_time)
+    arc_end_times.append(final_epoch)
+
+    arc_mid_times = []
+    for i in range(len(arc_start_times)):
+        arc_mid_times.append((arc_start_times[i] + arc_end_times[i]) / 2.0)
+
+    return arc_start_times, arc_mid_times, arc_end_times
+
+
+def retrieve_arc_wise_states_from_orbit(orbit, arc_times):
+    state_history = orbit[0]
+
+    arc_wise_initial_states = []
+    for time in arc_times:
+        current_initial_state = np.zeros(6)
+        for i in range(6):
+            current_initial_state[i] = np.interp(np.array(time), state_history[:, 0], state_history[:, i + 1])
+        arc_wise_initial_states.append(current_initial_state)
+
+    return arc_wise_initial_states
+
+
 def get_default_acceleration_models() -> dict:
     acceleration_models = dict(
         Sun={

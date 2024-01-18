@@ -65,9 +65,9 @@ def define_arcs(option, passes_start_times, passes_end_times):
 
 
 def define_doptrack_station(bodies):
-    station_altitude = 100.0
-    delft_latitude = np.deg2rad(51.015663)
-    delft_longitude = np.deg2rad(4.0068216)
+    station_altitude = 0.0
+    delft_latitude = np.deg2rad(52.0116)
+    delft_longitude = np.deg2rad(4.3571)
 
     # Add the ground station to the environment
     environment_setup.add_ground_station(
@@ -83,6 +83,33 @@ def define_station(bodies, station, coordinates):
     environment_setup.add_ground_station(bodies.get_body("Earth"), station,
                                          [station_altitude, station_latitude, station_longitude],
                                          element_conversion.geodetic_position_type)
+
+
+def create_ground_stations(bodies, nb_fake_stations, stations_long, stations_lat):
+    stations_names = ["DopTrackStation"]
+    for i in range(nb_fake_stations):
+        stations_names.append("Station" + str(i + 1))
+
+        environment_setup.add_ground_station(
+            bodies.get_body("Earth"), stations_names[i + 1],
+            [0.0, np.deg2rad(stations_lat[i]), np.deg2rad(stations_long[i])], element_conversion.geodetic_position_type)
+
+    return stations_names
+
+
+def create_link_ends_definitions(nb_fake_stations):
+    link_definitions = []
+    for i in range(nb_fake_stations + 1):
+        link_ends = dict()
+        if i == 0:
+            link_ends[observation.transmitter] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
+        else:
+            link_ends[observation.transmitter] = observation.body_reference_point_link_end_id("Earth", "Station" + str(i))
+        link_ends[observation.receiver] = observation.body_origin_link_end_id("spacecraft")
+
+        link_definitions.append(observation.LinkDefinition(link_ends))
+
+    return link_definitions
 
 
 def get_link_ends_id(station, spacecraft_name):
