@@ -101,7 +101,7 @@ initial_state = delfi_ephemeris.cartesian_state(mid_epoch)
 # To use consistent arc-wise initial states (they still all belong to a single spacecraft orbit!), we propagate the spacecraft's orbit
 # from its **global** initial state defined earlier over the entire propagation duration. From this **global** propagated orbit, we
 # then retrieve the spacecraft's states at the mid-epoch of each arc, to be later used as initial condition for the **arc_wise** propagation.
-global_orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, "spacecraft")
+global_orbit = propagate_initial_state(initial_state, initial_epoch, final_epoch, bodies, accelerations, "spacecraft", save_ephemeris=False)
 arc_wise_initial_states = retrieve_arc_wise_states_from_orbit(global_orbit, arc_mid_times)
 
 
@@ -299,7 +299,8 @@ plt.figure()
 ax = plt.axes(projection=ccrs.PlateCarree())
 ax.coastlines()
 ax.scatter(4.3571, 52.0116, color='red', marker='*', s=200, label='DopTrack')
-ax.scatter(stations_long,stations_lat, color='blue', marker='*', s=200, label='Fake stations')
+if nb_fake_stations>0:
+    ax.scatter(stations_long,stations_lat, color='blue', marker='*', s=200, label='Fake stations')
 ax.gridlines(draw_labels=True)
 ax.set_xlim(-180.0, 180.0)
 ax.set_ylim(-90.0, 90.0)

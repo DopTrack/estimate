@@ -223,7 +223,7 @@ def create_propagator_settings(initial_state, initial_time, final_time, bodies, 
 
 
 def propagate_initial_state(initial_state, initial_time, final_time, bodies, acceleration_models, spacecraft_name,
-                            save_accelerations=False):
+                            save_accelerations=False, save_ephemeris=True):
     # mid time
     mid_time = (initial_time + final_time) / 2.0
 
@@ -239,6 +239,8 @@ def propagate_initial_state(initial_state, initial_time, final_time, bodies, acc
     # Create propagator settings
     single_arc_propagator_settings = create_propagator_settings(initial_state, initial_time, final_time, bodies, acceleration_models,
                                                                 spacecraft_name, save_accelerations, accelerations_to_save)
+    if save_ephemeris:
+        single_arc_propagator_settings.processing_settings.set_integrated_result = True
 
     # Propagate dynamics
     simulator = numerical_simulation.create_dynamics_simulator(bodies, single_arc_propagator_settings)

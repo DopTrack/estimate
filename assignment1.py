@@ -2,6 +2,7 @@
 from matplotlib import pyplot as plt
 from sklearn.linear_model import LinearRegression  # linear regression module
 
+# Import doptrack-estimate functions
 from propagation_functions.environment import *
 from propagation_functions.propagation import *
 from utility_functions.time import *
@@ -12,6 +13,7 @@ from estimation_functions.estimation import *
 from fit_sgp4_solution import fit_sgp4_solution
 
 # Load tudatpy modules
+from tudatpy.numerical_simulation import environment
 from tudatpy.kernel import constants
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel.numerical_simulation import propagation_setup
@@ -25,12 +27,23 @@ extract_tar("./data.tar.xz")
 metadata_folder = 'metadata/'
 data_folder = 'data/'
 
-# Metadata input file
-metadata_file = metadata_folder + 'Delfi-C3_32789_202004020904.yml'
+# Define initial TLE of Delfi-C3
+# This TLE will be used to initialise Delfi-C3's orbit
+delfi_tle = environment.Tle("1 32789U 08021G   20092.14603172 +.00001512 +00000-0 +10336-3 0  9992",
+                            "2 32789 097.4277 137.6209 0011263 214.0075 146.0432 15.07555919650162")
 
-# Fit initial state at mid epoch to sgp4 propagation
-initial_epoch, mid_epoch, final_epoch, initial_state, drag_coef = fit_sgp4_solution(metadata_file, propagation_time_in_days=1.0, old_yml=True)
+# Retrieve initial epoch from TLE
+initial_epoch = delfi_tle.get_epoch()
 start_recording_day = get_start_next_day(initial_epoch)
+
+# Define the propagation time, and compute the final and mid-propagation epochs accordingly.
+propagation_time = 1.0 * constants.JULIAN_DAY
+final_epoch = start_recording_day + propagation_time
+mid_epoch = (initial_epoch + final_epoch) / 2.0
+
+# Retrieve the spacecraft's initial state at mid-epoch from the TLE ephemeris
+delfi_ephemeris = environment.TleEphemeris("Earth", "J2000", delfi_tle, False)
+initial_state = delfi_ephemeris.cartesian_state(mid_epoch)
 
 
 # --------------------------------------
@@ -40,8 +53,9 @@ start_recording_day = get_start_next_day(initial_epoch)
 # Define the propagation environment. This function creates a body "Delfi" with the following characteristics.
 # The Earth, Sun and Moon are also created, with default settings (gravity field, ephemeris, rotation, etc.)
 mass = 2.2
-ref_area = 0.035
+ref_area = (4 * 0.3 * 0.1 + 2 * 0.1 * 0.1) / 4  # Average projection area of a 3U CubeSat
 srp_coef = 1.2
+drag_coef = 1.2
 bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi")
 
 # Define accelerations exerted on Delfi

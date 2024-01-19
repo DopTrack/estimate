@@ -1,9 +1,8 @@
 # Load standard modules
 import statistics
-# Uncomment the following to make plots interactive
-# %matplotlib widget
 from matplotlib import pyplot as plt
 
+# Import doptrack-estimate functions
 from propagation_functions.environment import *
 from propagation_functions.propagation import *
 from estimation_functions.estimation import *
@@ -15,6 +14,7 @@ from utility_functions.data import extract_tar
 from fit_sgp4_solution import fit_sgp4_solution
 
 # Load tudatpy modules
+from tudatpy.numerical_simulation import environment
 from tudatpy.kernel import constants
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel import numerical_simulation
@@ -53,8 +53,18 @@ data = ['Delfi-C3_32789_202004011044.DOP1C', 'Delfi-C3_32789_202004011219.DOP1C'
 indices_files_to_load = [0, 1]
 # indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
-# fit initial state at mid epoch to sgp4 propagation
-initial_epoch, mid_epoch, final_epoch, initial_state, drag_coef = fit_sgp4_solution(metadata_folder + metadata[0], propagation_time_in_days=2.0, old_yml=True)
+
+# Retrieve initial epoch from TLE
+initial_epoch, initial_state_teme, b_star = get_tle_initial_conditions(metadata_folder + metadata[0], old_yml=True)
+
+# Define the propagation time, and compute the final and mid-propagation epochs accordingly.
+propagation_time = 2.0 * constants.JULIAN_DAY
+final_epoch = get_start_next_day(initial_epoch) + propagation_time
+mid_epoch = (initial_epoch + final_epoch) / 2.0
+
+# Retrieve the spacecraft's initial state at mid-epoch from the TLE orbit
+initial_state = propagate_sgp4(metadata_folder + metadata[0], initial_epoch, [mid_epoch], old_yml=True)[0, 1:]
+
 
 # Retrieve recording starting times
 recording_start_times = extract_recording_start_times_yml(metadata_folder, [metadata[i] for i in indices_files_to_load], old_yml=True)
@@ -69,8 +79,9 @@ arc_start_times, arc_mid_times, arc_end_times = define_arcs('per_day', passes_st
 
 # Define propagation_functions environment
 mass = 2.2
-ref_area = 0.035
+ref_area = (4 * 0.3 * 0.1 + 2 * 0.1 * 0.1) / 4  # Average projection area of a 3U CubeSat
 srp_coef = 1.2
+drag_coef = 1.2
 bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi", multi_arc_ephemeris=False)
 
 # Define accelerations exerted on Delfi
