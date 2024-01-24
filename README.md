@@ -26,6 +26,10 @@ Download the Doptrack estimate repository with the assignments and data using
 ```
 git clone -b develop git@github.com:DopTrack/estimate.git
 ```
+NOTE FOR SOD PRACTICAL STUDENTS: use the following command line instead of the above to retrieve the branch corresponding to the practical:
+```
+git clone -b sod_practical git@github.com:DopTrack/estimate.git
+```
 
 Then, move inside the `estimate` folder and install the dependencies with
 ```
