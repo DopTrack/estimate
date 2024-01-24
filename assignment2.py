@@ -32,46 +32,46 @@ data_folder = 'data/'
 
 # Files to be uploaded
 metadata = ['Delfi-C3_32789_202004011044.yml', 'Delfi-C3_32789_202004011219.yml',
-            'Delfi-C3_32789_202004020904.yml', 'Delfi-C3_32789_202004021953.yml',
+            'Delfi-C3_32789_202004021953.yml', 'Delfi-C3_32789_202004022126.yml',
             'Delfi-C3_32789_202004031031.yml', 'Delfi-C3_32789_202004031947.yml',
             'Delfi-C3_32789_202004041200.yml',
 
-            'Delfi-C3_32789_202004061012.yml', 'Delfi-C3_32789_202004062101.yml', 'Delfi-C3_32789_202004062236.yml',
+            'Delfi-C3_32789_202004061012.yml', 'Delfi-C3_32789_202004062101.yml',
             'Delfi-C3_32789_202004072055.yml', 'Delfi-C3_32789_202004072230.yml',
             'Delfi-C3_32789_202004081135.yml']
 
-data = ['Delfi-C3_32789_202004011044.DOP1C', 'Delfi-C3_32789_202004011219.DOP1C',
-        'Delfi-C3_32789_202004020904.DOP1C', 'Delfi-C3_32789_202004021953.DOP1C',
-        'Delfi-C3_32789_202004031031.DOP1C', 'Delfi-C3_32789_202004031947.DOP1C',
-        'Delfi-C3_32789_202004041200.DOP1C',
+data = ['Delfi-C3_32789_202004011044.csv', 'Delfi-C3_32789_202004011219.csv',
+        'Delfi-C3_32789_202004021953.csv', 'Delfi-C3_32789_202004022126.csv',
+        'Delfi-C3_32789_202004031031.csv', 'Delfi-C3_32789_202004031947.csv',
+        'Delfi-C3_32789_202004041200.csv',
 
-        'Delfi-C3_32789_202004061012.DOP1C', 'Delfi-C3_32789_202004062101.DOP1C', 'Delfi-C3_32789_202004062236.DOP1C',
-        'Delfi-C3_32789_202004072055.DOP1C', 'Delfi-C3_32789_202004072230.DOP1C',
-        'Delfi-C3_32789_202004081135.DOP1C']
+        'Delfi-C3_32789_202004061012.csv', 'Delfi-C3_32789_202004062101.csv',
+        'Delfi-C3_32789_202004072055.csv', 'Delfi-C3_32789_202004072230.csv',
+        'Delfi-C3_32789_202004081135.csv']
 
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
 indices_files_to_load = [0, 1]
-# indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+# indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 
 # Retrieve initial epoch from TLE
-initial_epoch, initial_state_teme, b_star = get_tle_initial_conditions(metadata_folder + metadata[0], old_yml=True)
+initial_epoch, initial_state_teme, b_star = get_tle_initial_conditions(metadata_folder + metadata[0], old_yml=False)
 
 # Define the propagation time, and compute the final and mid-propagation epochs accordingly.
-propagation_time = 2.0 * constants.JULIAN_DAY
+propagation_time = 10.0 * constants.JULIAN_DAY
 final_epoch = get_start_next_day(initial_epoch) + propagation_time
 mid_epoch = (initial_epoch + final_epoch) / 2.0
 
 # Retrieve the spacecraft's initial state at mid-epoch from the TLE orbit
-initial_state = propagate_sgp4(metadata_folder + metadata[0], initial_epoch, [mid_epoch], old_yml=True)[0, 1:]
+initial_state = propagate_sgp4(metadata_folder + metadata[0], initial_epoch, [mid_epoch], old_yml=False)[0, 1:]
 
 
 # Retrieve recording starting times
-recording_start_times = extract_recording_start_times_yml(metadata_folder, [metadata[i] for i in indices_files_to_load], old_yml=True)
+recording_start_times = extract_recording_start_times_yml(metadata_folder, [metadata[i] for i in indices_files_to_load], old_yml=False)
 
 # Load and process observations
 passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
-    "Delfi", data_folder, [data[i] for i in indices_files_to_load], recording_start_times, old_obs_format=True)
+    "Delfi", data_folder, [data[i] for i in indices_files_to_load], recording_start_times, old_obs_format=False)
 
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
 # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')

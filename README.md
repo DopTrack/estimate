@@ -24,7 +24,7 @@ conda install -n base -c conda-forge mamba -y
 
 Download the Doptrack estimate repository with the assignments and data using
 ```
-git clone git@github.com:DopTrack/estimate.git
+git clone -b develop git@github.com:DopTrack/estimate.git
 ```
 
 Then, move inside the `estimate` folder and install the dependencies with
@@ -32,7 +32,7 @@ Then, move inside the `estimate` folder and install the dependencies with
 mamba env create -f environment.yml
 ```
 
-Note, the installation can take a while (~15 min) as the depedency `tudatpy` needs to download additional data files during installation. 
+Note, the installation can take a while (~15 min) as the dependency `tudatpy` needs to download additional data files during installation. 
 
 Finally, to access the installed dependencies, activate the `doptrack-estimate` environment with
 ```
@@ -47,4 +47,4 @@ The installation comes with Jupyterlab. To start jupyterlab, activate the `doptr
 jupyter lab
 ```
 
-Data and metadata can be found in the tar files and is extracted during the execution of the scripts.
+Data and metadata can be found in the tar files and are extracted during the execution of the scripts.

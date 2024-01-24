@@ -162,16 +162,16 @@ plt.show()
 # --------------------------------------
 
 # Observation files to be uploaded
-metadata = ['Delfi-C3_32789_202004020904.yml', 'Delfi-C3_32789_202004021953.yml']
-data = ['Delfi-C3_32789_202004020904.DOP1C', 'Delfi-C3_32789_202004021953.DOP1C']
+metadata = ['Delfi-C3_32789_202004021953.yml', 'Delfi-C3_32789_202004022126.yml']
+data = ['Delfi-C3_32789_202004021953.csv', 'Delfi-C3_32789_202004022126.csv']
 
 # Compute recording start times
-recording_start_times = extract_recording_start_times_yml(metadata_folder, metadata, old_yml=True)
+recording_start_times = extract_recording_start_times_yml(metadata_folder, metadata, old_yml=False)
 
 # Process observations.
 # This loads the recorded observations and retrieve the start of each tracking pass
 passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
-    "Delfi", data_folder, data, recording_start_times, old_obs_format=True)
+    "Delfi", data_folder, data, recording_start_times, old_obs_format=False)
 
 # Retrieve measured Doppler values
 real_doppler = observations_set.concatenated_observations
@@ -195,7 +195,7 @@ plt.show()
 # --------------------------------------
 
 # Index of the *recorded* pass of interest (warning: the number of recorded passes might differ from the number of simulated passes)
-index_pass = 1
+index_pass = 0
 single_pass_start_time = passes_start_times[index_pass]
 single_pass_end_time = passes_end_times[index_pass]
 

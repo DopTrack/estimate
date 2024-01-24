@@ -6,6 +6,7 @@ channels:
   - tudat-team
 dependencies:
   - cartopy
+  - sgp4
   - jupyterlab
   - matplotlib
   - numpy
