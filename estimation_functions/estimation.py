@@ -141,9 +141,9 @@ def define_observation_settings(spacecraft_name, Doppler_models={}, passes_start
     combined_biases = []
 
     # Define absolute arc-wise biases
-    if "absolute_bias" in Doppler_models:
-        if Doppler_models.get('absolute_bias').get('activated'):
-            time_interval = Doppler_models.get('absolute_bias').get('time_interval')
+    if "constant_absolute_bias" in Doppler_models:
+        if Doppler_models.get('constant_absolute_bias').get('activated'):
+            time_interval = Doppler_models.get('constant_absolute_bias').get('time_interval')
             arc_wise_times = []
             if time_interval == 'per_pass':
                 arc_wise_times = passes_start_times
@@ -166,9 +166,9 @@ def define_observation_settings(spacecraft_name, Doppler_models={}, passes_start
                 combined_biases.append(absolute_bias)
 
     # Define relative arc-wise biases
-    if "relative_bias" in Doppler_models:
-        if Doppler_models.get('relative_bias').get('activated'):
-            time_interval = Doppler_models.get('relative_bias').get('time_interval')
+    if "constant_relative_bias" in Doppler_models:
+        if Doppler_models.get('constant_relative_bias').get('activated'):
+            time_interval = Doppler_models.get('constant_relative_bias').get('time_interval')
             arc_wise_times = []
             if time_interval == 'per_pass':
                 arc_wise_times = passes_start_times
@@ -191,9 +191,9 @@ def define_observation_settings(spacecraft_name, Doppler_models={}, passes_start
                 combined_biases.append(relative_bias)
 
     # Define arc-wise time drift biases
-    if "time_drift" in Doppler_models:
-        if Doppler_models.get('time_drift').get('activated'):
-            time_interval = Doppler_models.get('time_drift').get('time_interval')
+    if "linear_absolute_bias" in Doppler_models:
+        if Doppler_models.get('linear_absolute_bias').get('activated'):
+            time_interval = Doppler_models.get('linear_absolute_bias').get('time_interval')
             arc_wise_times = []
             if time_interval == 'per_pass':
                 arc_wise_times = passes_start_times
@@ -371,44 +371,44 @@ def define_parameters(parameters_list, bodies, propagator_settings, spacecraft_n
 
     # Absolute biases
     for k in range(len(pass_times_per_linkend)):
-        if "absolute_bias" in parameters_list:
-            if parameters_list.get('absolute_bias').get('estimate'):
-                if obs_models.get('absolute_bias').get('time_interval') == 'per_pass':
+        if "constant_absolute_bias" in parameters_list:
+            if parameters_list.get('constant_absolute_bias').get('estimate'):
+                if obs_models.get('constant_absolute_bias').get('time_interval') == 'per_pass':
                     parameter_settings.append(estimation_setup.parameter.arcwise_absolute_observation_bias(
                         observation.link_definition(pass_times_per_linkend[k][0]), observation.one_way_instantaneous_doppler_type,
                         pass_times_per_linkend[k][1], observation.receiver))
-                elif obs_models.get('absolute_bias').get('time_interval') == 'per_arc':
+                elif obs_models.get('constant_absolute_bias').get('time_interval') == 'per_arc':
                     parameter_settings.append(estimation_setup.parameter.arcwise_absolute_observation_bias(
                         observation.link_definition(pass_times_per_linkend[k][0]), observation.one_way_instantaneous_doppler_type, arc_start_times, observation.receiver))
-                elif obs_models.get('absolute_bias').get('time_interval') == 'global':
+                elif obs_models.get('constant_absolute_bias').get('time_interval') == 'global':
                     parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(
                         observation.link_definition(pass_times_per_linkend[k][0]), observation.one_way_instantaneous_doppler_type))
 
     # Relative biases
     for k in range(len(pass_times_per_linkend)):
-        if "relative_bias" in parameters_list:
-            if parameters_list.get('relative_bias').get('estimate'):
-                if obs_models.get('relative_bias').get('time_interval') == 'per_pass':
+        if "constant_relative_bias" in parameters_list:
+            if parameters_list.get('constant_relative_bias').get('estimate'):
+                if obs_models.get('constant_relative_bias').get('time_interval') == 'per_pass':
                     parameter_settings.append(estimation_setup.parameter.arcwise_relative_observation_bias(
                         observation.link_definition(pass_times_per_linkend[k][0]), observation.one_way_instantaneous_doppler_type, pass_times_per_linkend[k][1], observation.receiver))
-                elif obs_models.get('relative_bias').get('time_interval') == 'per_arc':
+                elif obs_models.get('constant_relative_bias').get('time_interval') == 'per_arc':
                     parameter_settings.append(estimation_setup.parameter.arcwise_relative_observation_bias(
                         observation.link_definition(pass_times_per_linkend[k][0]), observation.one_way_instantaneous_doppler_type, arc_start_times, observation.receiver))
-                elif obs_models.get('relative_bias').get('time_interval') == 'global':
+                elif obs_models.get('constant_relative_bias').get('time_interval') == 'global':
                     parameter_settings.append( estimation_setup.parameter.relative_observation_bias(
                         observation.link_definition(pass_times_per_linkend[k][0]), observation.one_way_instantaneous_doppler_type))
 
     # Time drift biases
     for k in range(len(pass_times_per_linkend)):
-        if "time_drift" in parameters_list:
-            if parameters_list.get('time_drift').get('estimate'):
-                if obs_models.get('time_drift').get('time_interval') == 'per_pass':
+        if "linear_absolute_bias" in parameters_list:
+            if parameters_list.get('linear_absolute_bias').get('estimate'):
+                if obs_models.get('linear_absolute_bias').get('time_interval') == 'per_pass':
                     parameter_settings.append(estimation_setup.parameter.arcwise_time_drift_observation_bias(
                         pass_times_per_linkend[k][0], observation.one_way_instantaneous_doppler_type, pass_times_per_linkend[k][1], pass_times_per_linkend[k][1], observation.receiver))
-                elif obs_models.get('time_drift').get('time_interval') == 'per_arc':
+                elif obs_models.get('linear_absolute_bias').get('time_interval') == 'per_arc':
                     parameter_settings.append(estimation_setup.parameter.arcwise_time_drift_observation_bias(
                         pass_times_per_linkend[k][0], observation.one_way_instantaneous_doppler_type, arc_start_times, arc_start_times, observation.receiver))
-                elif obs_models.get('time_drift').get('time_interval') == 'global':
+                elif obs_models.get('linear_absolute_bias').get('time_interval') == 'global':
                     parameter_settings.append(estimation_setup.parameter.time_drift_observation_bias(
                         pass_times_per_linkend[k][0], observation.one_way_instantaneous_doppler_type, pass_times_per_linkend[k][1][0], observation.receiver))
 

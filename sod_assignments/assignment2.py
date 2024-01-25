@@ -131,15 +131,11 @@ define_doptrack_station(bodies)
 # Noting that the arc duration can vary (see arc definition line 64)
 bias_definition = 'per_pass'
 Doppler_models = dict(
-    absolute_bias={
+    constant_absolute_bias={
         'activated': True,
         'time_interval': bias_definition
     },
-    relative_bias={
-        'activated': True,
-        'time_interval': bias_definition
-    },
-    time_drift={
+    linear_absolute_bias={
         'activated': True,
         'time_interval': bias_definition
     }
@@ -151,13 +147,10 @@ parameters_list = dict(
     initial_state={
         'estimate': True
     },
-    absolute_bias={
+    constant_absolute_bias={
         'estimate': True
     },
-    relative_bias={
-        'estimate': False
-    },
-    time_drift={
+    linear_absolute_bias={
         'estimate': True
     }
 )
