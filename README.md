@@ -55,3 +55,32 @@ jupyter lab
 ```
 
 Data and metadata can be found in the tar files and are extracted during the execution of the scripts.
+
+## Authors 
+This Software has been developed on ideas and software from the following developers/contributors:
+
+- **Sam Fayolle**, Technische Universiteit Delft (Developer)
+- **Bart Root**  ![ORCID logo](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png) [0000-0001-7742-1434](https://orcid.org/0000-0001-7742-1434), Technische Universiteit Delft (Developer)
+- **Martin Søndergaard**, Technische Universiteit Delft (Developer)
+
+## License
+The contents of this repository are licensed under a GNU General Public License v3.0 (see LICENSE file).
+
+Copyright notice:
+
+Technische Universiteit Delft hereby disclaims all copyright interest in the program “DopTrack-estimate”. Doptrack-estimate is a python package to perform orbit estimation of DopTrack-derived Doppler data written by the Author(s). Henri Werij, Faculty of Aerospace Engineering, Technische Universiteit Delft.
+
+© 2021, B.C. Root
+
+## References
+
+The main part of the code is based on the software project Tudat: TU Delft Astronomical Toolbox and can be found on https://docs.tudat.space/en/latest/
+
+Furthermore, the DopTrack/estimate code is part of a larger DopTrack codebase. You are free to acknowlege us!
+
+## Would you like to contribute?
+If you have any comments, feedback, or recommendations, feel free to reach out by sending an email to b.c.root@tudelft.nl
+
+If you would like to contribute directly, you are welcome to fork this repository.
+
+Thank you and enjoy!
