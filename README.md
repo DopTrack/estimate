@@ -59,8 +59,9 @@ Data and metadata can be found in the tar files and are extracted during the exe
 ## Authors 
 This Software has been developed on ideas and software from the following developers/contributors:
 
+Sam Fayolle, Technische Universiteit Delft (Developer)
 Bart Root ORCID logo 0000-0001-7742-1434, Technische Universiteit Delft (Developer)
-Pavel Novak, University of West Bohemia (Contributor)
+Martin Søndergaard, Technische Universiteit Delft (Developer)
 
 ## License
 The contents of this repository are licensed under a GNU General Public License v3.0 (see LICENSE file).
