@@ -67,7 +67,7 @@ The contents of this repository are licensed under a GNU General Public License 
 
 Copyright notice:
 
-Technische Universiteit Delft hereby disclaims all copyright interest in the program “GSH package”. GSH is a MATLAB package to do Global Spherical Harmonic Analyses (GSHA) and Synthesis (GSHS) for Crust1.0. written by the Author(s). Henri Werij, Faculty of Aerospace Engineering, Technische Universiteit Delft.
+Technische Universiteit Delft hereby disclaims all copyright interest in the program “DopTrack-estimate”. Doptrack-estimate is a python package to perform orbit estimation of DopTrack-derived Doppler data written by the Author(s). Henri Werij, Faculty of Aerospace Engineering, Technische Universiteit Delft.
 
 © 2021, B.C. Root
 
