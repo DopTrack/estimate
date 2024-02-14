@@ -1,0 +1,8 @@
+git clone -b sod_practical https://github.com/DopTrack/estimate.git
+conda env create -f environment_2.yml
+conda activate doptrack-estimate
+conda install -c conda-forge jupyterlab
+conda install -c conda-forge sgp4
+conda install -c conda-forge scipy
+conda install -c conda-forge scikit-learn
+conda install -c conda-forge cartopy
