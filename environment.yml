@@ -1,9 +1,7 @@
 name: doptrack-estimate
 channels:
   - conda-forge
-  - anaconda
   - tudat-team/label/dev
-  - tudat-team
 dependencies:
   - cartopy
   - sgp4
@@ -11,9 +9,6 @@ dependencies:
   - matplotlib
   - numpy
   - pandas
-  - pip
-  - pip:
-    - git+https://github.com/DopTrack/process.git
   - scikit-learn
   - scipy
   - tudatpy
