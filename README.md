@@ -24,7 +24,7 @@ conda install -n base -c conda-forge mamba -y
 
 Download the Doptrack estimate repository with the assignments and data using
 ```
-git clone -b develop https://github.com/DopTrack/estimate.git
+git clone https://github.com/DopTrack/estimate.git
 ```
 ```diff
 - NOTE FOR SOD PRACTICAL STUDENTS:
