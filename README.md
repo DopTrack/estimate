@@ -10,33 +10,26 @@ The purpose of the software is to estimate orbits from the DopTrack range-rate d
 - Anaconda/miniconda installation
 - Git 
 
-We recommend to use conda for managing the installation of the required dependencies. Please consult the documentation to install either [Anaconda](https://docs.anaconda.com/anaconda/install/) or [miniconda](https://docs.conda.io/en/main/miniconda.html). For the SOD praktikum we advise to install Miniconda as it is less demanding for your computer.
+We recommend to use conda for managing the installation of the required dependencies. Please consult the documentation to install either [Anaconda](https://docs.anaconda.com/anaconda/install/) or [miniconda](https://docs.conda.io/en/main/miniconda.html). For git please reffer how to install here: [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
 Run the line below in your terminal to verify that conda is installed:
 ```
 conda --version
 ```
 
-We recommend using mamba for better performance when installing the dependencies. To install mamba in the base conda environment, execute
-```
-conda install -n base -c conda-forge mamba -y
-```
-
 Download the Doptrack estimate repository with the assignments and data using
 ```
 git clone https://github.com/DopTrack/estimate.git
 ```
-```diff
-- NOTE FOR SOD PRACTICAL STUDENTS:
+
+Then, move inside the `estimate` folder 
 ```
-use the following command line instead of the above to retrieve the branch corresponding to the practical:
-```
-git clone -b sod_practical https://github.com/DopTrack/estimate.git
+cd estimate
 ```
 
-Then, move inside the `estimate` folder and install the dependencies with
+and install the dependencies with
 ```
-mamba env create -f environment.yml
+conda env create -f environment.yml
 ```
 
 Note, the installation can take a while (~15 min) as the dependency `tudatpy` needs to download additional data files during installation. 
