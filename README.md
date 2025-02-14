@@ -10,7 +10,7 @@ The purpose of the software is to estimate orbits from the DopTrack range-rate d
 - Anaconda/miniconda installation
 - Git 
 
-We recommend to use conda for managing the installation of the required dependencies. Please consult the documentation to install either [Anaconda](https://docs.anaconda.com/anaconda/install/) or [miniconda](https://docs.conda.io/en/main/miniconda.html). For git please reffer how to install here: [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
+We recommend to use conda for managing the installation of the required dependencies. Please consult the documentation to install either [Anaconda](https://docs.anaconda.com/anaconda/install/) or [miniconda](https://docs.conda.io/en/main/miniconda.html). For git please refer to the following link in how to install: [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
 Run the line below in your terminal to verify that conda is installed:
 ```
