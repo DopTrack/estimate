@@ -263,7 +263,7 @@ def get_initial_states(bodies, arc_start_times, spacecraft_name):
     arc_initial_states = []
     for i in range(len(arc_start_times)):
         arc_initial_states.append(bodies.get(spacecraft_name).ephemeris.cartesian_state(arc_start_times[i])
-                                  - bodies.get("Earth").ephemeris.get_cartesian_state(arc_start_times[i]))
+                                  - bodies.get("Earth").ephemeris.cartesian_state(arc_start_times[i]))
     return arc_initial_states
 
 
