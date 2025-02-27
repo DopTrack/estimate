@@ -82,7 +82,15 @@ def propagate_sgp4(filename: str, initial_epoch: float, epochs: list[float], old
     # Propagate to epoch with sgp4
     for time in epochs:
         state_sgp4 = sgp4(sat, (time-initial_epoch)/60.0)
-        state_teme_array = np.concatenate((np.array(state_sgp4[0]), np.array(state_sgp4[1])))*1.0e3
-        propagated_states.append(np.concatenate((np.array([time]), element_conversion.teme_state_to_j2000(time, state_teme_array)), axis=None))
+
+        pos_teme_array = (np.array(state_sgp4[0]))*1.0e3
+        vel_teme_array = (np.array(state_sgp4[1]))*1.0e3
+
+        teme_to_j2000_rotation = element_conversion.teme_to_j2000(time)
+
+        pos_j2000_array = teme_to_j2000_rotation.dot(pos_teme_array)
+        vel_j2000_array = teme_to_j2000_rotation.dot(vel_teme_array)
+
+        propagated_states.append(np.concatenate((np.array([time]), pos_j2000_array, vel_j2000_array), axis=None))
 
     return np.array(propagated_states)
