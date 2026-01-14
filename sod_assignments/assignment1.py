@@ -29,15 +29,13 @@ from utility_functions.tle import *
 from utility_functions.data import extract_tar
 from estimation_functions.observations_data import *
 from estimation_functions.estimation import *
-print('end import doptrack-estimate functions')
 
 # Load tudatpy modules
-from tudatpy.numerical_simulation import environment
 from tudatpy import constants
 from tudatpy.interface import spice
-from tudatpy.numerical_simulation import propagation_setup
 from tudatpy.astro import element_conversion, frame_conversion
-print('end import tudatpy modules')
+from tudatpy.dynamics import environment
+
 
 
 ### EXTRACTING DATA 
@@ -513,7 +511,6 @@ fig = plt.figure()
 ax = fig.add_subplot()
 ax.set_title(f'Simulated received frequency')
 ax.plot((simulated_obs_times - start_recording_day)/3600, simulated_doppler, color='red', linestyle='none', marker='.')
-ax.legend()
 ax.set_xlabel('Time [hours since start of day]')
 ax.set_ylabel('Radio frequency [Hz]')
 plt.grid()

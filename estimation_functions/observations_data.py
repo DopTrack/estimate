@@ -4,9 +4,8 @@ from scipy.interpolate import interp1d  # interpolation function
 from utility_functions.time import jday
 
 # Load tudatpy modules
-from tudatpy.numerical_simulation.estimation_setup import observation
-import tudatpy.numerical_simulation.estimation as tudat_estimation
-from tudatpy.numerical_simulation import estimation_setup, estimation
+from tudatpy.estimation.observable_models_setup import links, model_settings
+from tudatpy.estimation.observations_setup import viability, observations_simulation_settings, observations_wrapper
 
 import yaml
 
@@ -111,15 +110,15 @@ def load_and_format_observations(spacecraft_name, data_folder, data, recording_s
 
     # Define link ends
     link_ends = dict()
-    link_ends[observation.receiver] = observation.body_reference_point_link_end_id("Earth", "DopTrackStation")
-    link_ends[observation.transmitter] = observation.body_origin_link_end_id(spacecraft_name)
+    link_ends[links.receiver] = links.body_reference_point_link_end_id("Earth", "DopTrackStation")
+    link_ends[links.transmitter] = links.body_origin_link_end_id(spacecraft_name)
 
     # Set existing observations
     existing_observation_set = (link_ends, (np.array(obs_values), obs_times))
     observations_input = dict()
-    observations_input[observation.one_way_instantaneous_doppler_type] = existing_observation_set
+    observations_input[model_settings.one_way_instantaneous_doppler_type] = existing_observation_set
 
-    observations_set = tudat_estimation.set_existing_observations(observations_input, observation.receiver)
+    observations_set = observations_wrapper.set_existing_observations(observations_input, links.receiver)
 
     return passes_start_times, passes_end_times, obs_times, observations_set
 
@@ -261,17 +260,17 @@ def get_observations_single_pass(single_pass_start_time, single_pass_end_time, o
 
 def simulate_ideal_simulations(estimator, bodies, link_ends_def, obs_times, stations, max_elevation):
     link_ends_per_obs = dict()
-    link_ends_per_obs[observation.one_way_instantaneous_doppler_type] = link_ends_def
-    observation_simulation_settings = observation.tabulated_simulation_settings_list(
-        link_ends_per_obs, obs_times, observation.receiver)
+    link_ends_per_obs[model_settings.one_way_instantaneous_doppler_type] = link_ends_def
+    observation_simulation_settings = observations_simulation_settings.tabulated_simulation_settings_list(
+        link_ends_per_obs, obs_times, links.receiver)
 
     for k in range(len(stations)):
-        elevation_condition = observation.elevation_angle_viability(("Earth", stations[k]), np.deg2rad(max_elevation))
-        observation.add_viability_check_to_observable_for_link_ends(
-            observation_simulation_settings, [elevation_condition], observation.one_way_instantaneous_doppler_type,
+        elevation_condition = viability.elevation_angle_viability(("Earth", stations[k]), np.deg2rad(max_elevation))
+        viability.add_viability_check_to_observable_for_link_ends(
+            observation_simulation_settings, [elevation_condition], model_settings.one_way_instantaneous_doppler_type,
             link_ends_def[k])
 
-    return estimation.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
+    return observations_wrapper.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
 
 def get_obs_per_link_end_and_pass(stations, obs_times, obs_values, obs_time_step):

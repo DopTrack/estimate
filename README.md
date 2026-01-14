@@ -39,16 +39,6 @@ Finally, to access the installed dependencies, activate the `doptrack-estimate` 
 conda activate doptrack-estimate
 ```
 
-## Run notebooks
-
-The installation comes with Jupyterlab. To start jupyterlab, activate the `doptrack-estimate` environment and run the following command within the repository directory
-
-```
-jupyter lab
-```
-
-Data and metadata can be found in the tar files and are extracted during the execution of the scripts.
-
 ## Authors 
 This Software has been developed on ideas and software from the following developers/contributors:
 

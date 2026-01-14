@@ -4,11 +4,10 @@ import numpy as np
 # Load tudatpy modules
 from tudatpy import constants
 from tudatpy.interface import spice
-from tudatpy import numerical_simulation
-from tudatpy.numerical_simulation import environment_setup
-from tudatpy.numerical_simulation.environment_setup import ephemeris
-from tudatpy.numerical_simulation import propagation_setup
-from tudatpy.util import result2array
+from tudatpy.dynamics import environment_setup
+from tudatpy.dynamics import propagation_setup
+from tudatpy.dynamics.simulator import create_dynamics_simulator
+from tudatpy import util
 
 
 def get_arc_times_definition(initial_epoch, final_epoch, arc_duration):
@@ -243,10 +242,10 @@ def propagate_initial_state(initial_state, initial_time, final_time, bodies, acc
         single_arc_propagator_settings.processing_settings.set_integrated_result = True
 
     # Propagate dynamics
-    simulator = numerical_simulation.create_dynamics_simulator(bodies, single_arc_propagator_settings)
+    simulator = create_dynamics_simulator(bodies, single_arc_propagator_settings)
 
-    cartesian_states = result2array(simulator.state_history)
-    dependent_variables = result2array(simulator.dependent_variable_history)
+    cartesian_states = util.result2array(simulator.state_history)
+    dependent_variables = util.result2array(simulator.dependent_variable_history)
     keplerian_states = dependent_variables[:, 0:7]
     latitudes = dependent_variables[:, [0, 7]]
     longitudes = dependent_variables[:, [0, 8]]

@@ -4,9 +4,7 @@ import numpy as np
 
 from tudatpy import constants
 from tudatpy.interface import spice
-from tudatpy import numerical_simulation
-from tudatpy.numerical_simulation import environment_setup
-from tudatpy.numerical_simulation.environment_setup import ephemeris
+from tudatpy.dynamics import environment_setup
 
 
 def get_drag_coefficient(mass, ref_area, b_star, from_tle):
@@ -26,8 +24,7 @@ def define_body_settings(spacecraft_name, multi_arc_ephemeris=False):
     body_settings = environment_setup.get_default_body_settings(bodies_to_create, global_frame_origin, global_frame_orientation)
 
     body_settings.add_empty_settings(spacecraft_name)
-    body_state_history = dict()
-    body_settings.get(spacecraft_name).ephemeris_settings = ephemeris.tabulated(dict(), global_frame_origin, global_frame_orientation)
+    body_settings.get(spacecraft_name).ephemeris_settings = environment_setup.ephemeris.tabulated(dict(), global_frame_origin, global_frame_orientation)
     if multi_arc_ephemeris:
         body_settings.get(spacecraft_name).ephemeris_settings.make_multi_arc_ephemeris = 1
 
