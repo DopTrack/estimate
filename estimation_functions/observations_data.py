@@ -4,9 +4,9 @@ from scipy.interpolate import interp1d  # interpolation function
 from utility_functions.time import jday
 
 # Load tudatpy modules
-from tudatpy.kernel.numerical_simulation.estimation_setup import observation
-import tudatpy.kernel.numerical_simulation.estimation as tudat_estimation
-from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
+from tudatpy.numerical_simulation.estimation_setup import observation
+import tudatpy.numerical_simulation.estimation as tudat_estimation
+from tudatpy.numerical_simulation import estimation_setup, estimation
 
 import yaml
 

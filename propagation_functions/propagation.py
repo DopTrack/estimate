@@ -2,12 +2,12 @@
 import numpy as np
 
 # Load tudatpy modules
-from tudatpy.kernel import constants
-from tudatpy.kernel.interface import spice
-from tudatpy.kernel import numerical_simulation
-from tudatpy.kernel.numerical_simulation import environment_setup
-from tudatpy.kernel.numerical_simulation.environment_setup import ephemeris
-from tudatpy.kernel.numerical_simulation import propagation_setup
+from tudatpy import constants
+from tudatpy.interface import spice
+from tudatpy import numerical_simulation
+from tudatpy.numerical_simulation import environment_setup
+from tudatpy.numerical_simulation.environment_setup import ephemeris
+from tudatpy.numerical_simulation import propagation_setup
 from tudatpy.util import result2array
 
 

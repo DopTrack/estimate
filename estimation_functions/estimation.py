@@ -1,12 +1,12 @@
 import numpy as np
 
 # Load tudatpy modules
-from tudatpy.kernel import constants
-from tudatpy.kernel import numerical_simulation
-from tudatpy.kernel.numerical_simulation import environment_setup
-from tudatpy.kernel.numerical_simulation import estimation_setup, estimation
-from tudatpy.kernel.numerical_simulation.estimation_setup import observation
-from tudatpy.kernel.astro import element_conversion
+from tudatpy import constants
+from tudatpy import numerical_simulation
+from tudatpy.numerical_simulation import environment_setup
+from tudatpy.numerical_simulation import estimation_setup, estimation
+from tudatpy.numerical_simulation.estimation_setup import observation
+from tudatpy.astro import element_conversion
 
 from propagation_functions.propagation import create_integrator_settings
 from utility_functions.time import get_days_starting_times, get_days_end_times

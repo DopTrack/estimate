@@ -2,11 +2,11 @@
 
 import numpy as np
 
-from tudatpy.kernel import constants
-from tudatpy.kernel.interface import spice
-from tudatpy.kernel import numerical_simulation
-from tudatpy.kernel.numerical_simulation import environment_setup
-from tudatpy.kernel.numerical_simulation.environment_setup import ephemeris
+from tudatpy import constants
+from tudatpy.interface import spice
+from tudatpy import numerical_simulation
+from tudatpy.numerical_simulation import environment_setup
+from tudatpy.numerical_simulation.environment_setup import ephemeris
 
 
 def get_drag_coefficient(mass, ref_area, b_star, from_tle):
