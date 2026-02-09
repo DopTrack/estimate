@@ -1,6 +1,39 @@
+###############################################################
+### ASSIGNMENT 2 : STATE ESTIMATION 
+###############################################################
+
+# In this assignment you are learning to estimate state from the acquired range-rate data.
+# You will capture the data and look at different arc settings and other estimation settings.
+
+#     - Propagation of initial orbit from TLE 
+#     - Setup your estimation: data selection, arc length, estimation parameters
+#     - Perform estimation
+#     - Inspect results
+#     - Validate your results
+
+
+### UNITS AND CONVENTIONS 
+# All parameters are represented in SI units or otherwise stated.
+
+### CODE USAGE
+# In this course you are using actual tracking data from the DopTrack laboratory (https://doptrack.tudelft.nl) and use the Delft-based orbit determination software Tudat 
+# (https://docs.tudat.space/en/stable/#) to perform orbit analysis.
+
+
+### IMPORT STATEMENTS
+
 # Load standard modules
+import sys
+sys.path.append("../")
+
 import statistics
 from matplotlib import pyplot as plt
+
+# Import doptrack-estimate functions
+from propagation_functions.environment import *
+from propagation_functions.propagation import *
+from estimation_functions.estimation import *
+from estimation_functions.observations_data import *
 
 # Import doptrack-estimate functions
 from propagation_functions.environment import *
@@ -11,16 +44,13 @@ from estimation_functions.observations_data import *
 from utility_functions.time import *
 from utility_functions.tle import *
 from utility_functions.data import extract_tar
-from fit_sgp4_solution import fit_sgp4_solution
 
 # Load tudatpy modules
-from tudatpy.numerical_simulation import environment
-from tudatpy.kernel import constants
-from tudatpy.kernel.interface import spice
-from tudatpy.kernel import numerical_simulation
-from tudatpy.kernel.numerical_simulation import propagation_setup
-from tudatpy.kernel.numerical_simulation import estimation_setup
-from tudatpy.kernel.astro import element_conversion
+from tudatpy import constants
+from tudatpy.interface import spice
+from tudatpy.dynamics import environment
+from tudatpy.dynamics import parameters
+from tudatpy.estimation import estimation_analysis
 
 # Extract data
 extract_tar("./metadata.tar.xz")
@@ -29,6 +59,17 @@ extract_tar("./data.tar.xz")
 # Define import folders
 metadata_folder = 'metadata/'
 data_folder = 'data/'
+
+### UPLOAD DATA
+
+# Lets upload Doppler data files and strat setting up the least square fitting. Put here your data files (.csv) and the metadata files (.yml) you want 
+# to use in the estimation. The meta files will be used to compute the initial orbit. Here, you can use the doptrack-data.tudelft.nl website to get 
+# processed data from the Delft DopTrack tracking station.
+# Go to the processed/tracking directory and select a satellite and year you want to use. Than, download the files you want to use for the assignment.
+# Download data for one whole week.
+# We have made a default data set in data and metadata directories for the Delfi-C3 satellite, but you are more than welcome to use different data for 
+# the assignment (including your own satellite pass)
+
 
 # Files to be uploaded
 metadata = ['Delfi-C3_32789_202004011044.yml', 'Delfi-C3_32789_202004011219.yml',
@@ -45,13 +86,23 @@ data = ['Delfi-C3_32789_202004011044.csv', 'Delfi-C3_32789_202004011219.csv',
         'Delfi-C3_32789_202004031031.csv', 'Delfi-C3_32789_202004031947.csv',
         'Delfi-C3_32789_202004041200.csv',
 
-        'Delfi-C3_32789_202004061012.csv', 'Delfi-C3_32789_202004062101.csv',
+        'Delfi-C3_32789_202004061012.csv', 'Delfi-C3_32789_202004062101.csv', 
         'Delfi-C3_32789_202004072055.csv', 'Delfi-C3_32789_202004072230.csv',
         'Delfi-C3_32789_202004081135.csv']
-
+        
 # Specify which metadata and data files should be loaded (this will change throughout the assignment)
-indices_files_to_load = [0, 1]
-# indices_files_to_load = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+# indices_files_to_load = [0, 1]
+indices_files_to_load = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11]
+
+
+### SETTING UP AN INITIAL ORBIT DETERMINATION
+
+# For the least square estimator, a first initial guess needs to be performed. Especially for low-quality data and bad geometry, this initial guess 
+# should be close to the actual orbit to have the estimation converge. For this, we use the TLE data as this is already something we have and know 
+# is close to the actual orbit of the satellite. In Assignment 3, you are going to look at the effect of the error on the initial guess and how it 
+# affects the estimation.
+# For now, try to set the propagation time large enough that it compasses your complete dataset. This can be done by setting the parameter propagation_time 
+# to a number of days that you want to propagate the initial orbit.
 
 
 # Retrieve initial epoch from TLE
@@ -65,7 +116,6 @@ mid_epoch = (initial_epoch + final_epoch) / 2.0
 # Retrieve the spacecraft's initial state at mid-epoch from the TLE orbit
 initial_state = propagate_sgp4(metadata_folder + metadata[0], initial_epoch, [mid_epoch], old_yml=False)[0, 1:]
 
-
 # Retrieve recording starting times
 recording_start_times = extract_recording_start_times_yml(metadata_folder, [metadata[i] for i in indices_files_to_load], old_yml=False)
 
@@ -73,9 +123,23 @@ recording_start_times = extract_recording_start_times_yml(metadata_folder, [meta
 passes_start_times, passes_end_times, observation_times, observations_set = load_and_format_observations(
     "Delfi", data_folder, [data[i] for i in indices_files_to_load], recording_start_times, old_obs_format=False)
 
+
+### SETTING YOUR ESTIMATION ARCS
+
+# Here, you need to specify what type of arcs the data is cut into. So, are you calculating a new state after every pass, every day, 3 days or even 
+# a week. Here, a trade-off needs to make between the amount of collected data and the unmodelled disturbance forces during the arc. 
+# In the assignment, you are going to play with this setting to see what effect it has on the estimation.
+
 # Define tracking arcs and retrieve the corresponding arc starting times (this will change throughout the assignment)
 # Four options: one arc per pass ('per_pass'), one arc per day ('per_day'), one arc every 3 days ('per_3_days') and one arc per week ('per_week')
 arc_start_times, arc_mid_times, arc_end_times = define_arcs('per_day', passes_start_times, passes_end_times)
+print('arc_start_times', arc_start_times)
+print('arc_end_times', arc_end_times)
+
+### SETTING THE ESTIMATION SETTINGS 
+
+# Now your initial guess is generated and you selected the estimation arcs, lets take a look at the environment of the satellite 
+# (forces acting on the s/c)
 
 # Define propagation_functions environment
 mass = 2.2
@@ -121,14 +185,12 @@ bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi", multi_
 # Define multi-arc propagator settings
 multi_arc_propagator_settings = define_multi_arc_propagation_settings(arc_wise_initial_states, arc_start_times, arc_end_times,
                                                                       bodies, accelerations, "Delfi")
-
 # Create the DopTrack station
 define_doptrack_station(bodies)
 
-
 # Define default observation settings
 # Specify on which time interval the observation bias(es) should be defined. This will change throughout the assignment (can be 'per_pass', 'per_arc', 'global')
-# Noting that the arc duration can vary (see arc definition line 64)
+# Noting that the arc duration can vary (see arc definition)
 bias_definition = 'per_pass'
 Doppler_models = dict(
     constant_absolute_bias={
@@ -156,14 +218,19 @@ parameters_list = dict(
 )
 parameters_to_estimate = define_parameters(parameters_list, bodies, multi_arc_propagator_settings, "Delfi",
                                            arc_start_times, arc_mid_times, [(get_link_ends_id("DopTrackStation", "Delfi"), passes_start_times)], Doppler_models)
-estimation_setup.print_parameter_names(parameters_to_estimate)
+parameters.print_parameter_names(parameters_to_estimate)
 
 # Create the estimator object
-estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
+estimator = estimation_analysis.Estimator(bodies, parameters_to_estimate, observation_settings, multi_arc_propagator_settings)
 
 # Simulate (ideal) observations
 ideal_observations = simulate_observations_from_estimator("Delfi", observation_times, estimator, bodies)
 
+
+### RUN THE ESTIMATION
+
+# Now you are all setup to run the estimation. In the following block the dynamic equations are set and the estimator knows what kind of parameters need to be estimated.
+# This can take a while, depending on your amount of data and settings
 
 # Save the true parameters to later analyse the error
 truth_parameters = parameters_to_estimate.parameter_vector
@@ -181,8 +248,21 @@ std_residuals = statistics.stdev(residuals[:,nb_iterations-1])
 
 residuals_per_pass = get_residuals_per_pass(observation_times, residuals, passes_start_times)
 
+print('--------------------------------------------------------------')
+for i in range(len(residuals_per_pass)):
+    print('size residuals current pass', np.shape(residuals_per_pass[i]))  
+
+
+### INSPECT THE RESULTS 
+
+# The first number that we look at is final residual. This shows the difference (root mean square) between the observed range-rate and the final orbit model 
+# estimated by your program.
+
 # Plot residuals
-fig = plt.figure()
+
+number_of_passes = len(indices_files_to_load)
+
+fig = plt.figure(figsize=(10,number_of_passes*5.0), dpi=125)
 fig.tight_layout()
 fig.subplots_adjust(hspace=0.3)
 
@@ -195,13 +275,193 @@ for i in range(len(passes_start_times)):
     plt.grid()
 plt.show()
 
-
 # Plot residuals histogram
 fig = plt.figure()
 ax = fig.add_subplot()
 # plt.hist(residuals[:,1],100)
 plt.hist(residuals[:,nb_iterations-1],100)
-ax.set_xlabel('Doppler residuals')
+ax.set_xlabel('Doppler residuals [m/s]')
 ax.set_ylabel('Nb occurrences []')
+plt.grid()
+plt.show()
+
+
+### ORBIT VALIDATION: some comparison suggestions
+
+updated_parameters = parameters_to_estimate.parameter_vector
+print('----------------------------------------')
+print('INITIAL STATE from TLE')
+print(initial_state)
+print('----------------------------------------')
+print('UPDATED STATE ARC #1 from DOPTRACK')
+print(updated_parameters[0:6])
+print('----------------------------------------')
+print('ALL ESTIMATED PARAMETERS')
+print(updated_parameters)
+gravitational_parameter = bodies.get("Earth").gravity_field_model.gravitational_parameter
+state_keplerian = element_conversion.cartesian_to_keplerian(updated_parameters[0:6], gravitational_parameter)
+
+print('-------------ARC #1 state---------------')
+print('Semi-major axis = \t\t\t',state_keplerian[0]/1000, '\t km')
+print('Eccentricity = \t\t\t\t',state_keplerian[1])
+print('Inclination = \t\t\t\t',np.rad2deg(state_keplerian[2]), '\t deg')
+print('Argument of Perigee = \t\t\t',np.rad2deg(state_keplerian[3]), '\t deg')
+print('Right Ascension of Ascending Node = \t',np.rad2deg(state_keplerian[4]), '\t deg')
+print('True anomaly = \t\t\t\t',np.rad2deg(state_keplerian[5]), '\t deg')
+print('True longitude = \t\t\t',np.mod(np.rad2deg(state_keplerian[5])+np.rad2deg(state_keplerian[3]),360), '\t deg')
+print('Altitude = \t\t\t\t',state_keplerian[0]/1000-6371.360, '\t km')
+
+TLE_keplerian = element_conversion.cartesian_to_keplerian(arc_wise_initial_states[0], gravitational_parameter)
+
+print('---------------TLE state----------------')
+print('Semi-major axis = \t\t\t',TLE_keplerian[0]/1000, '\t km')
+print('Eccentricity = \t\t\t\t',TLE_keplerian[1])
+print('Inclination = \t\t\t\t',np.rad2deg(TLE_keplerian[2]), '\t deg')
+print('Argument of Perigee = \t\t\t',np.rad2deg(TLE_keplerian[3]), '\t deg')
+print('Right Ascension of Ascending Node = \t',np.rad2deg(TLE_keplerian[4]), '\t deg')
+print('True anomaly = \t\t\t\t',np.rad2deg(TLE_keplerian[5]), '\t deg')
+print('True longitude = \t\t\t',np.mod(np.rad2deg(TLE_keplerian[5])+np.rad2deg(TLE_keplerian[3]),360), '\t deg')
+print('Altitude = \t\t\t\t',TLE_keplerian[0]/1000-6371.360, '\t km')
+
+# Manually coded for 7 daily arcs
+pos_error1 = np.sqrt((updated_parameters[0]-arc_wise_initial_states[0][0])**2+(updated_parameters[1]-arc_wise_initial_states[0][1])**2+(updated_parameters[2]-arc_wise_initial_states[0][2])**2)
+pos_error2 = np.sqrt((updated_parameters[6]-arc_wise_initial_states[1][0])**2+(updated_parameters[7]-arc_wise_initial_states[1][1])**2+(updated_parameters[8]-arc_wise_initial_states[1][2])**2)
+pos_error3 = np.sqrt((updated_parameters[12]-arc_wise_initial_states[2][0])**2+(updated_parameters[13]-arc_wise_initial_states[2][1])**2+(updated_parameters[14]-arc_wise_initial_states[2][2])**2)
+pos_error4 = np.sqrt((updated_parameters[18]-arc_wise_initial_states[3][0])**2+(updated_parameters[19]-arc_wise_initial_states[3][1])**2+(updated_parameters[20]-arc_wise_initial_states[3][2])**2)
+pos_error5 = np.sqrt((updated_parameters[24]-arc_wise_initial_states[4][0])**2+(updated_parameters[25]-arc_wise_initial_states[4][1])**2+(updated_parameters[26]-arc_wise_initial_states[4][2])**2)
+pos_error6 = np.sqrt((updated_parameters[30]-arc_wise_initial_states[5][0])**2+(updated_parameters[31]-arc_wise_initial_states[5][1])**2+(updated_parameters[32]-arc_wise_initial_states[5][2])**2)
+pos_error7 = np.sqrt((updated_parameters[36]-arc_wise_initial_states[6][0])**2+(updated_parameters[37]-arc_wise_initial_states[6][1])**2+(updated_parameters[38]-arc_wise_initial_states[6][2])**2)
+print('----------------------------------------')
+print('Distance between TLE initial state and estimated state (ARC #1): ', pos_error1/1000)
+print('IF AVAILABLE: Other ARC DISTANCE estimates')
+print(pos_error2/1000)
+print(pos_error3/1000)
+print(pos_error4/1000)
+print(pos_error5/1000)
+print(pos_error6/1000)
+print(pos_error7/1000)
+print('----------------------------------------')
+print('BIASES ESTIMATES')
+print('ABSOLUTE CONSTANT BIASES ESTIMATES')
+print(updated_parameters[42:54])
+print('LINEAR CONSTANT BIASES ESTIMATES')
+print(updated_parameters[54:66])
+#print(updated_parameters[66:78])
+
+# Comparing estimated vs TLE orbit. First redefine the dynamical environment (multi-arc ephemeris disabled) 
+bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi",multi_arc_ephemeris=False)
+
+# Specify which the index of the arc you want to investigate
+arc_index = 0
+
+# Retrieve estimated and TLE states for the arc under consideration
+estimated_state = updated_parameters[6*arc_index:(arc_index+1)*6]
+TLE_state = arc_wise_initial_states[arc_index]
+
+# Propagate estimated and TLE orbits
+estimated_orbit = propagate_initial_state(estimated_state, arc_start_times[arc_index], arc_end_times[arc_index], bodies, accelerations, "Delfi")[0]
+TLE_orbit = propagate_initial_state(TLE_state, arc_start_times[arc_index], arc_end_times[arc_index], bodies, accelerations, "Delfi")[0]
+
+
+# Plot differences between the TLE and estimated orbits
+
+fig = plt.figure() # plt.figure(figsize=(10,6*5.0), dpi=125)
+fig.tight_layout()
+fig.subplots_adjust(hspace=0.3)
+ax = fig.add_subplot(3, 2, 1)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,1]-estimated_orbit[:,1])/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff X [km]')
+ax.set_title(f'Pass '+str(i+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 3)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,2]-estimated_orbit[:,2])/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff Y [km]')
+ax.set_title(f'Pass '+str(i+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 5)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,3]-estimated_orbit[:,3])/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff Z [km]')
+ax.set_title(f'Pass '+str(i+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 2)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,4]-estimated_orbit[:,4])/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff VX [km/s]')
+ax.set_title(f'Pass '+str(i+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 4)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,5]-estimated_orbit[:,5])/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff VY [km/s]')
+ax.set_title(f'Pass '+str(i+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 6)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,6]-estimated_orbit[:,6])/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff VZ [km/s]')
+ax.set_title(f'Pass '+str(i+1))
+plt.grid()
+plt.show()
+
+
+# Plot propagated (estimated and TLE) orbits
+fig = plt.figure(figsize=(6,6), dpi=125)
+ax = fig.add_subplot(111, projection='3d')
+ax.set_title(f'Satellite trajectory around Earth')
+ax.plot(TLE_orbit[:, 1], TLE_orbit[:, 2], TLE_orbit[:, 3], label='TLE orbit', linestyle='-.')
+ax.plot(estimated_orbit[:, 1], estimated_orbit[:, 2], estimated_orbit[:, 3], label='estimated orbit', linestyle='-.')
+ax.scatter(0.0, 0.0, 0.0, label="Earth", marker='o', color='blue')
+ax.legend()
+ax.set_xlabel('x [m]')
+ax.set_ylabel('y [m]')
+ax.set_zlabel('z [m]')
+plt.show()
+
+# Compute distance and velocity magnitude for both TLE and estimated orbits
+range_TLE = np.sqrt(TLE_orbit[:,1]**2+TLE_orbit[:,2]**2+TLE_orbit[:,3]**2)
+range_estimated = np.sqrt(estimated_orbit[:,1]**2+estimated_orbit[:,2]**2+estimated_orbit[:,3]**2)
+
+Vmag_TLE = np.sqrt(TLE_orbit[:,4]**2+TLE_orbit[:,5]**2+TLE_orbit[:,6]**2)
+Vmag_estimated = np.sqrt(estimated_orbit[:,4]**2+estimated_orbit[:,5]**2+estimated_orbit[:,6]**2)
+
+# Plot difference in distance and velocity magnitude between TLE and estimated orbits
+fig = plt.figure() # plt.figure(figsize=(10,2*5.0), dpi=125)
+fig.tight_layout()
+fig.subplots_adjust(hspace=0.3)
+ax = fig.add_subplot(2, 1, 1)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(range_TLE-range_estimated)/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Residuals range [km]')
+ax.set_title(f'Pass '+str(i+1))
+plt.grid()
+
+ax = fig.add_subplot(2, 1, 2)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(Vmag_TLE-Vmag_estimated)/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Residuals Vmag [km/s]')
+ax.set_title(f'Pass '+str(i+1))
+plt.grid()
+plt.show()
+
+
+# Compute distance between the TLE and estimated orbits
+distance_orbits = np.sqrt((TLE_orbit[:,1]-estimated_orbit[:,1])**2+(TLE_orbit[:,2]-estimated_orbit[:,2])**2+(TLE_orbit[:,3]-estimated_orbit[:,3])**2)
+
+fig = plt.figure() # plt.figure(figsize=(10,1*5.0), dpi=125)
+fig.tight_layout()
+fig.subplots_adjust(hspace=0.3)
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(distance_orbits)/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Distance [km]')
+ax.set_title('Distance between orbits [km]')
 plt.grid()
 plt.show()

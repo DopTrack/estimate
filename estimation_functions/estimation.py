@@ -243,10 +243,10 @@ def define_observation_settings(spacecraft_name, Doppler_models={}, passes_start
                 combined_biases.append(time_bias)
 
     # Define all biases
-    biases = biases.combined_bias(combined_biases)
+    obs_biases = biases.combined_bias(combined_biases)
 
     # Create observation settings for each link/observable
-    observation_settings = [model_settings.one_way_open_loop_doppler(get_link_ends("DopTrackStation", spacecraft_name), bias_settings=biases)]
+    observation_settings = [model_settings.one_way_open_loop_doppler(get_link_ends("DopTrackStation", spacecraft_name), bias_settings=obs_biases)]
 
     return observation_settings
 
@@ -533,7 +533,7 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
     # Define observations weights
     noise_level = 5.0
     weights_per_observable = \
-        {model_settings.observation.one_way_instantaneous_doppler_type: noise_level ** -2}
+        {model_settings.one_way_instantaneous_doppler_type: noise_level ** -2}
     estimation_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform estimation_functions and return pod_output
