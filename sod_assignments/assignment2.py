@@ -47,6 +47,7 @@ from utility_functions.data import extract_tar
 
 # Load tudatpy modules
 from tudatpy import constants
+from tudatpy.astro import element_conversion, frame_conversion
 from tudatpy.interface import spice
 from tudatpy.dynamics import environment
 from tudatpy.dynamics import parameters
@@ -262,23 +263,19 @@ for i in range(len(residuals_per_pass)):
 
 number_of_passes = len(indices_files_to_load)
 
-fig = plt.figure(figsize=(10,number_of_passes*5.0), dpi=125)
-fig.tight_layout()
-fig.subplots_adjust(hspace=0.3)
-
+fig, axs = plt.subplots(math.ceil(number_of_passes / 3),3, figsize=(12, 8))
 for i in range(len(passes_start_times)):
-    ax = fig.add_subplot(len(passes_start_times), 1, i+1)
-    ax.plot(residuals_per_pass[i], color='blue', linestyle='-.')
-    ax.set_xlabel('Time [s]')
-    ax.set_ylabel('Residuals [m/s]')
-    ax.set_title(f'Pass '+str(i+1))
-    plt.grid()
+    axs[i//3,i%3].plot(residuals_per_pass[i], color='blue', linestyle='-.')
+    axs[i//3,i%3].set_xlabel('Time [s]')
+    axs[i//3,i%3].set_ylabel('Residuals [m/s]')
+    axs[i//3,i%3].set_title(f'Pass '+str(i+1))
+    axs[i//3,i%3].grid()
+fig.tight_layout()
 plt.show()
 
 # Plot residuals histogram
 fig = plt.figure()
 ax = fig.add_subplot()
-# plt.hist(residuals[:,1],100)
 plt.hist(residuals[:,nb_iterations-1],100)
 ax.set_xlabel('Doppler residuals [m/s]')
 ax.set_ylabel('Nb occurrences []')
@@ -287,71 +284,61 @@ plt.show()
 
 
 ### ORBIT VALIDATION: some comparison suggestions
-
 updated_parameters = parameters_to_estimate.parameter_vector
-print('----------------------------------------')
-print('INITIAL STATE from TLE')
-print(initial_state)
-print('----------------------------------------')
-print('UPDATED STATE ARC #1 from DOPTRACK')
-print(updated_parameters[0:6])
-print('----------------------------------------')
+gravitational_parameter = bodies.get("Earth").gravity_field_model.gravitational_parameter
 print('ALL ESTIMATED PARAMETERS')
 print(updated_parameters)
-gravitational_parameter = bodies.get("Earth").gravity_field_model.gravitational_parameter
-state_keplerian = element_conversion.cartesian_to_keplerian(updated_parameters[0:6], gravitational_parameter)
 
-print('-------------ARC #1 state---------------')
-print('Semi-major axis = \t\t\t',state_keplerian[0]/1000, '\t km')
-print('Eccentricity = \t\t\t\t',state_keplerian[1])
-print('Inclination = \t\t\t\t',np.rad2deg(state_keplerian[2]), '\t deg')
-print('Argument of Perigee = \t\t\t',np.rad2deg(state_keplerian[3]), '\t deg')
-print('Right Ascension of Ascending Node = \t',np.rad2deg(state_keplerian[4]), '\t deg')
-print('True anomaly = \t\t\t\t',np.rad2deg(state_keplerian[5]), '\t deg')
-print('True longitude = \t\t\t',np.mod(np.rad2deg(state_keplerian[5])+np.rad2deg(state_keplerian[3]),360), '\t deg')
-print('Altitude = \t\t\t\t',state_keplerian[0]/1000-6371.360, '\t km')
+for arc in range(nb_arcs):
+    print('-------------ARC #', str(arc+1), '---------------')
 
-TLE_keplerian = element_conversion.cartesian_to_keplerian(arc_wise_initial_states[0], gravitational_parameter)
+    print('INITIAL STATE from TLE')
+    print(arc_wise_initial_states[arc])
+    print('UPDATED STATE from DOPTRACK')
+    print(updated_parameters[arc*6:(arc+1)*6])
 
-print('---------------TLE state----------------')
-print('Semi-major axis = \t\t\t',TLE_keplerian[0]/1000, '\t km')
-print('Eccentricity = \t\t\t\t',TLE_keplerian[1])
-print('Inclination = \t\t\t\t',np.rad2deg(TLE_keplerian[2]), '\t deg')
-print('Argument of Perigee = \t\t\t',np.rad2deg(TLE_keplerian[3]), '\t deg')
-print('Right Ascension of Ascending Node = \t',np.rad2deg(TLE_keplerian[4]), '\t deg')
-print('True anomaly = \t\t\t\t',np.rad2deg(TLE_keplerian[5]), '\t deg')
-print('True longitude = \t\t\t',np.mod(np.rad2deg(TLE_keplerian[5])+np.rad2deg(TLE_keplerian[3]),360), '\t deg')
-print('Altitude = \t\t\t\t',TLE_keplerian[0]/1000-6371.360, '\t km')
+    # Distance between the two orbits
+    pos_error = np.sqrt((updated_parameters[arc*6+0]-arc_wise_initial_states[arc][0])**2+(updated_parameters[arc*6+1]-arc_wise_initial_states[arc][1])**2+(updated_parameters[arc*6+2]-arc_wise_initial_states[arc][2])**2)
+    print('Distance [km] between TLE initial state and estimated state: ', pos_error/1000)
 
-# Manually coded for 7 daily arcs
-pos_error1 = np.sqrt((updated_parameters[0]-arc_wise_initial_states[0][0])**2+(updated_parameters[1]-arc_wise_initial_states[0][1])**2+(updated_parameters[2]-arc_wise_initial_states[0][2])**2)
-pos_error2 = np.sqrt((updated_parameters[6]-arc_wise_initial_states[1][0])**2+(updated_parameters[7]-arc_wise_initial_states[1][1])**2+(updated_parameters[8]-arc_wise_initial_states[1][2])**2)
-pos_error3 = np.sqrt((updated_parameters[12]-arc_wise_initial_states[2][0])**2+(updated_parameters[13]-arc_wise_initial_states[2][1])**2+(updated_parameters[14]-arc_wise_initial_states[2][2])**2)
-pos_error4 = np.sqrt((updated_parameters[18]-arc_wise_initial_states[3][0])**2+(updated_parameters[19]-arc_wise_initial_states[3][1])**2+(updated_parameters[20]-arc_wise_initial_states[3][2])**2)
-pos_error5 = np.sqrt((updated_parameters[24]-arc_wise_initial_states[4][0])**2+(updated_parameters[25]-arc_wise_initial_states[4][1])**2+(updated_parameters[26]-arc_wise_initial_states[4][2])**2)
-pos_error6 = np.sqrt((updated_parameters[30]-arc_wise_initial_states[5][0])**2+(updated_parameters[31]-arc_wise_initial_states[5][1])**2+(updated_parameters[32]-arc_wise_initial_states[5][2])**2)
-pos_error7 = np.sqrt((updated_parameters[36]-arc_wise_initial_states[6][0])**2+(updated_parameters[37]-arc_wise_initial_states[6][1])**2+(updated_parameters[38]-arc_wise_initial_states[6][2])**2)
-print('----------------------------------------')
-print('Distance between TLE initial state and estimated state (ARC #1): ', pos_error1/1000)
-print('IF AVAILABLE: Other ARC DISTANCE estimates')
-print(pos_error2/1000)
-print(pos_error3/1000)
-print(pos_error4/1000)
-print(pos_error5/1000)
-print(pos_error6/1000)
-print(pos_error7/1000)
+    state_keplerian = element_conversion.cartesian_to_keplerian(updated_parameters[arc*6:(arc+1)*6], gravitational_parameter)
+
+    print('-------------Estimated state---------------')
+    print('Semi-major axis = \t\t\t',state_keplerian[0]/1000, '\t km')
+    print('Eccentricity = \t\t\t\t',state_keplerian[1])
+    print('Inclination = \t\t\t\t',np.rad2deg(state_keplerian[2]), '\t deg')
+    print('Argument of Perigee = \t\t\t',np.rad2deg(state_keplerian[3]), '\t deg')
+    print('Right Ascension of Ascending Node = \t',np.rad2deg(state_keplerian[4]), '\t deg')
+    print('True anomaly = \t\t\t\t',np.rad2deg(state_keplerian[5]), '\t deg')
+    print('True longitude = \t\t\t',np.mod(np.rad2deg(state_keplerian[5])+np.rad2deg(state_keplerian[3]),360), '\t deg')
+    print('Altitude = \t\t\t\t',state_keplerian[0]/1000-6371.360, '\t km')
+
+    TLE_keplerian = element_conversion.cartesian_to_keplerian(arc_wise_initial_states[arc], gravitational_parameter)
+
+    print('---------------TLE state----------------')
+    print('Semi-major axis = \t\t\t',TLE_keplerian[0]/1000, '\t km')
+    print('Eccentricity = \t\t\t\t',TLE_keplerian[1])
+    print('Inclination = \t\t\t\t',np.rad2deg(TLE_keplerian[2]), '\t deg')
+    print('Argument of Perigee = \t\t\t',np.rad2deg(TLE_keplerian[3]), '\t deg')
+    print('Right Ascension of Ascending Node = \t',np.rad2deg(TLE_keplerian[4]), '\t deg')
+    print('True anomaly = \t\t\t\t',np.rad2deg(TLE_keplerian[5]), '\t deg')
+    print('True longitude = \t\t\t',np.mod(np.rad2deg(TLE_keplerian[5])+np.rad2deg(TLE_keplerian[3]),360), '\t deg')
+    print('Altitude = \t\t\t\t',TLE_keplerian[0]/1000-6371.360, '\t km')
+
+    
+
 print('----------------------------------------')
 print('BIASES ESTIMATES')
 print('ABSOLUTE CONSTANT BIASES ESTIMATES')
-print(updated_parameters[42:54])
+print(updated_parameters[6*nb_arcs:6*nb_arcs+number_of_passes])
 print('LINEAR CONSTANT BIASES ESTIMATES')
-print(updated_parameters[54:66])
-#print(updated_parameters[66:78])
+print(updated_parameters[6*nb_arcs+number_of_passes+1:6*nb_arcs+number_of_passes*2])
+
 
 # Comparing estimated vs TLE orbit. First redefine the dynamical environment (multi-arc ephemeris disabled) 
 bodies = define_environment(mass, ref_area, drag_coef, srp_coef, "Delfi",multi_arc_ephemeris=False)
 
-# Specify which the index of the arc you want to investigate
+# Specify which the index of the arc you want to investigate further
 arc_index = 0
 
 # Retrieve estimated and TLE states for the arc under consideration
@@ -363,52 +350,53 @@ estimated_orbit = propagate_initial_state(estimated_state, arc_start_times[arc_i
 TLE_orbit = propagate_initial_state(TLE_state, arc_start_times[arc_index], arc_end_times[arc_index], bodies, accelerations, "Delfi")[0]
 
 
+
 # Plot differences between the TLE and estimated orbits
 
-fig = plt.figure() # plt.figure(figsize=(10,6*5.0), dpi=125)
-fig.tight_layout()
-fig.subplots_adjust(hspace=0.3)
+fig = plt.figure(figsize=(10, 8)) 
 ax = fig.add_subplot(3, 2, 1)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,1]-estimated_orbit[:,1])/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Diff X [km]')
-ax.set_title(f'Pass '+str(i+1))
+ax.set_title(f'Pass '+str(arc_index+1))
 plt.grid()
 
 ax = fig.add_subplot(3, 2, 3)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,2]-estimated_orbit[:,2])/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Diff Y [km]')
-ax.set_title(f'Pass '+str(i+1))
+# ax.set_title(f'Pass '+str(arc_index+1))
 plt.grid()
 
 ax = fig.add_subplot(3, 2, 5)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,3]-estimated_orbit[:,3])/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Diff Z [km]')
-ax.set_title(f'Pass '+str(i+1))
+# ax.set_title(f'Pass '+str(arc_index+1))
 plt.grid()
 
 ax = fig.add_subplot(3, 2, 2)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,4]-estimated_orbit[:,4])/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Diff VX [km/s]')
-ax.set_title(f'Pass '+str(i+1))
+# ax.set_title(f'Pass '+str(arc_index+1))
 plt.grid()
 
 ax = fig.add_subplot(3, 2, 4)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,5]-estimated_orbit[:,5])/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Diff VY [km/s]')
-ax.set_title(f'Pass '+str(i+1))
+# ax.set_title(f'Pass '+str(arc_index+1))
 plt.grid()
 
 ax = fig.add_subplot(3, 2, 6)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(TLE_orbit[:,6]-estimated_orbit[:,6])/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Diff VZ [km/s]')
-ax.set_title(f'Pass '+str(i+1))
+# ax.set_title(f'Pass '+str(arc_index+1))
 plt.grid()
+
+fig.tight_layout()
 plt.show()
 
 
@@ -434,34 +422,162 @@ Vmag_estimated = np.sqrt(estimated_orbit[:,4]**2+estimated_orbit[:,5]**2+estimat
 
 # Plot difference in distance and velocity magnitude between TLE and estimated orbits
 fig = plt.figure() # plt.figure(figsize=(10,2*5.0), dpi=125)
-fig.tight_layout()
-fig.subplots_adjust(hspace=0.3)
+
 ax = fig.add_subplot(2, 1, 1)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(range_TLE-range_estimated)/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Residuals range [km]')
-ax.set_title(f'Pass '+str(i+1))
+ax.set_title(f'Pass '+str(arc_index+1))
 plt.grid()
 
 ax = fig.add_subplot(2, 1, 2)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(Vmag_TLE-Vmag_estimated)/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Residuals Vmag [km/s]')
-ax.set_title(f'Pass '+str(i+1))
 plt.grid()
+fig.tight_layout()
 plt.show()
 
 
 # Compute distance between the TLE and estimated orbits
 distance_orbits = np.sqrt((TLE_orbit[:,1]-estimated_orbit[:,1])**2+(TLE_orbit[:,2]-estimated_orbit[:,2])**2+(TLE_orbit[:,3]-estimated_orbit[:,3])**2)
 
-fig = plt.figure() # plt.figure(figsize=(10,1*5.0), dpi=125)
+fig = plt.figure() 
 fig.tight_layout()
 fig.subplots_adjust(hspace=0.3)
 ax = fig.add_subplot(1, 1, 1)
 ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],(distance_orbits)/1000, color='blue', linestyle='-.')
 ax.set_xlabel('Time [s]')
-ax.set_ylabel('Distance [km]')
-ax.set_title('Distance between orbits [km]')
+ax.set_ylabel('Distance between orbits [km]')
+ax.set_title(f'Pass '+str(arc_index+1))
 plt.grid()
+plt.show()
+
+
+# Compute difference in RSW and keplerian coordinates
+rsw_difference_wrt_tle = np.zeros((len(TLE_orbit[:,0]),7))
+keplerian_difference_wrt_tle = np.zeros((len(TLE_orbit[:,0]),7))
+for i in range(len(TLE_orbit[:,0])): 
+
+    current_epoch = TLE_orbit[i,0]
+    rsw_difference_wrt_tle[i,0] = current_epoch
+    keplerian_difference_wrt_tle[i,0] = current_epoch
+
+    # Retrieve current TLE and estimated states
+    current_tle_state = TLE_orbit[i,1:]
+    current_estimated_state = estimated_orbit[i,1:]
+
+    # Compute Keplerian elements from TLE and estimated orbits
+    current_tle_keplerian = element_conversion.cartesian_to_keplerian(current_tle_state, bodies.get("Earth").gravitational_parameter)
+    current_estimated_keplerian = element_conversion.cartesian_to_keplerian(current_estimated_state, bodies.get("Earth").gravitational_parameter)
+    keplerian_difference_wrt_tle[i, 1:7] = current_estimated_keplerian - current_tle_keplerian
+
+    # Compute difference in the inertial frame
+    current_state_difference = current_estimated_state - current_tle_state
+    current_position_difference = current_state_difference[0:3]
+    current_velocity_difference = current_state_difference[3:6]
+
+    # Compute the rotation matrix from inertial to RSW frames
+    rotation_to_rsw = frame_conversion.inertial_to_rsw_rotation_matrix(current_tle_state)
+
+    # Convert the state difference from inertial to RSW frames
+    rsw_difference_wrt_tle[i, 1:4] = rotation_to_rsw @ current_position_difference
+    rsw_difference_wrt_tle[i, 4:7] = rotation_to_rsw @ current_velocity_difference
+
+
+# Plot differences between the TLE and estimated orbits in RSW
+
+fig = plt.figure(figsize=(10, 8)) 
+ax = fig.add_subplot(3, 2, 1)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],rsw_difference_wrt_tle[:,1]/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff R [km]')
+ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 3)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],rsw_difference_wrt_tle[:,2]/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff S [km]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 5)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],rsw_difference_wrt_tle[:,3]/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff W [km]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 2)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],rsw_difference_wrt_tle[:,4]/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff Vr [km/s]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 4)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],rsw_difference_wrt_tle[:,5]/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff Vs [km/s]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 6)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],rsw_difference_wrt_tle[:,6]/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Diff Vw [km/s]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+fig.tight_layout()
+plt.show()
+
+
+# Plot differences between the TLE and estimated orbits in Keplerian elements
+
+fig = plt.figure(figsize=(10, 8)) 
+ax = fig.add_subplot(3, 2, 1)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],keplerian_difference_wrt_tle[:,1]/1000, color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel(r'$\Delta a$ [km]')
+ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 3)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],keplerian_difference_wrt_tle[:,2], color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel(r'$\Delta e$ [-]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 5)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],np.degrees(keplerian_difference_wrt_tle[:,3]), color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel(r'$\Delta i$ [deg]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 2)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],np.degrees(keplerian_difference_wrt_tle[:,4]), color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel(r'$\Delta \omega$ [deg]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 4)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],np.degrees(keplerian_difference_wrt_tle[:,5]), color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel(r'$\Delta \Omega$ [deg]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+ax = fig.add_subplot(3, 2, 6)
+ax.plot(TLE_orbit[:,0]-TLE_orbit[0,0],np.degrees(keplerian_difference_wrt_tle[:,6]), color='blue', linestyle='-.')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel(r'$\Delta \theta$ [deg]')
+# ax.set_title(f'Pass '+str(arc_index+1))
+plt.grid()
+
+fig.tight_layout()
 plt.show()

@@ -7,6 +7,7 @@ from tudatpy.dynamics import parameters, parameters_setup
 from tudatpy.estimation.observable_models_setup import links, model_settings, biases
 from tudatpy.estimation.observations_setup import viability, observations_simulation_settings, observations_wrapper
 from tudatpy.estimation import estimation_analysis
+from tudatpy.estimation.observations import observations_processing
 from tudatpy.astro import element_conversion
 
 from propagation_functions.propagation import create_integrator_settings
@@ -525,16 +526,14 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
             inv_cov[i*6+j, i*6+j] = 1.0 / (apriori_covariance_position * apriori_covariance_position)
             inv_cov[i*6+3+j, i*6+3+j] = 1.0 / (apriori_covariance_velocity * apriori_covariance_velocity)
 
+    # Define observations weights
+    noise_level = 5.0
+    observations_set.set_constant_weight(noise_level ** -2, observations_processing.observation_parser(model_settings.one_way_instantaneous_doppler_type))
+
     # Create input object for estimation_functions, adding observations and parameter set information
     convergence_check = estimation_analysis.estimation_convergence_checker(nb_iterations)
     estimation_input = estimation_analysis.EstimationInput(observations_set, inv_cov, convergence_check)
     estimation_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
-
-    # Define observations weights
-    noise_level = 5.0
-    weights_per_observable = \
-        {model_settings.one_way_instantaneous_doppler_type: noise_level ** -2}
-    estimation_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform estimation_functions and return pod_output
     return estimator.perform_estimation(estimation_input)

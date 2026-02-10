@@ -64,6 +64,7 @@ from tudatpy.dynamics import parameters
 from tudatpy.estimation import estimation_analysis
 from tudatpy.estimation.observable_models_setup import links, model_settings
 from tudatpy.estimation.observations_setup import viability, random_noise, observations_simulation_settings, observations_wrapper
+from tudatpy.estimation.observations import observations_processing
 
 # Import doptrack-estimate functions
 from propagation_functions.environment import *
@@ -359,14 +360,13 @@ initial_parameters_perturbation = perturbed_parameters - truth_parameters
 # Start the estimation of the chosen scenario and retrieve the estimated parameters and their formal errors. Because this is a 
 # simulation, we can assess the true errors and see how well the formal errors describe the true errors.
 
+# Define observations weights
+simulated_observations.set_constant_weight(noise_level ** -2, observations_processing.observation_parser(model_settings.one_way_instantaneous_doppler_type))
+
 # Create input settings for the estimation
 nb_iterations = 10  # number of least-squares iteration to be performed (this can be modified if the estimation fails, see tip)
 convergence_checker = estimation_analysis.estimation_convergence_checker(maximum_iterations=nb_iterations)
 estimation_input = estimation_analysis.EstimationInput(simulated_observations, convergence_checker=convergence_checker)
-
-# Define observation weights
-weights_per_observable = {model_settings.one_way_instantaneous_doppler_type: noise_level ** -2}
-estimation_input.set_constant_weight_per_observable(weights_per_observable)
 
 # Perform the estimation
 estimation_input.define_estimation_settings(reintegrate_variational_equations=True)
