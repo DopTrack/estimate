@@ -58,7 +58,7 @@ from matplotlib import pyplot as plt
 # Load tudatpy modules
 from tudatpy import constants
 from tudatpy.interface import spice
-from tudatpy.astro import element_conversion
+from tudatpy.astro import element_conversion, frame_conversion
 from tudatpy.dynamics import environment
 from tudatpy.dynamics import parameters
 from tudatpy.estimation import estimation_analysis
@@ -378,6 +378,7 @@ true_errors = parameters_to_estimate.parameter_vector - truth_parameters
 
 # Retrieve correlation matrix
 correlations = estimation_output.correlations
+covariance = estimation_output.covariance
 
 # Compute true error and true-to-formal error ratio for each parameter, at each iteration
 # each column corresponds to one LSQ iteration
@@ -392,15 +393,49 @@ for i in range(parameters_history.shape[1]):
 final_residuals = estimation_output.final_residuals
 residual_history = estimation_output.residual_history
 
+updated_parameters = parameters_to_estimate.parameter_vector
 
 # Printing various estimation outputs
 print('###############################################')
 print('PRINTING ESTIMATION OUTPUTS')
-print('estimated parameters', parameters_to_estimate.parameter_vector)
+print('estimated parameters', updated_parameters)
 print('initial parameters perturbation', initial_parameters_perturbation)
 print('true_errors', true_errors)
 print('formal errors', formal_errors)
 print('nb data points', len(observation_times))
+print('###############################################')
+
+# Printing detailed estimation outputs
+print('###############################################')
+print('PRINTING DETAILED ESTIMATION OUTPUTS')
+for arc in range(nb_arcs):
+    print('-------------ARC #', str(arc+1), '---------------')
+
+    print('True state [m,m/s]')
+    print(truth_parameters[arc*6+0:arc*6+6])
+    print('Estimated state [m,m/s]')
+    print(updated_parameters[arc*6:(arc+1)*6])
+    print ('True error [m,m/s]')
+    print(true_errors[arc*6:(arc+1)*6])
+    print ('Formal error [m,m/s]')
+    print(formal_errors[arc*6:(arc+1)*6])
+    print ('Relative error [-]')
+    print(np.abs(true_errors[arc*6:(arc+1)*6])/truth_parameters[arc*6+0:arc*6+6])
+
+
+print('----------------------------------------')
+print('OTHER (NON-STATE) PARAMETERS (check parameter indices)')
+print('True parameters')
+print(truth_parameters[nb_arcs*6:])
+print('Estimated parameters')
+print(updated_parameters[nb_arcs*6:])
+print ('True error')
+print(true_errors[nb_arcs*6:])
+print ('Formal error')
+print(formal_errors[nb_arcs*6:])
+print ('Relative error')
+print(np.abs(true_errors[nb_arcs*6:])/truth_parameters[nb_arcs*6:])
+
 print('###############################################')
 
 # Pre-defined plots
@@ -424,13 +459,13 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.4 * 2, 4.8))
 ax1.scatter((np.array(observation_times) - initial_epoch) / 3600.0, residual_history[:, 0], color='blue',
             label='residuals')
 ax1.plot((np.array(observation_times) - initial_epoch) / 3600.0, noise_level * np.ones(len(observation_times)),
-         color='blue', label='1sigma noise level')
+         color='red', label='1sigma noise level')
 ax1.plot((np.array(observation_times) - initial_epoch) / 3600.0, -noise_level * np.ones(len(observation_times)),
-         color='blue')
+         color='red')
 ax1.plot((np.array(observation_times) - initial_epoch) / 3600.0, 3 * noise_level * np.ones(len(observation_times)),
-         color='blue', linestyle='dotted', label='3sigma noise level')
+         color='red', linestyle='dotted', label='3sigma noise level')
 ax1.plot((np.array(observation_times) - initial_epoch) / 3600.0, -3 * noise_level * np.ones(len(observation_times)),
-         color='blue', linestyle='dotted')
+         color='red', linestyle='dotted')
 ax1.set_ylabel('Residuals [m/s]')
 ax1.set_xlabel('Time since initial epoch [hr]')
 ax1.set_title('First iteration')
@@ -441,13 +476,13 @@ ax1.legend()
 ax2.scatter((np.array(observation_times) - initial_epoch) / 3600.0, residual_history[:, -1], color='blue',
             label='residuals')
 ax2.plot((np.array(observation_times) - initial_epoch) / 3600.0, noise_level * np.ones(len(observation_times)),
-         color='blue', label='1sigma noise level')
+         color='red', label='1sigma noise level')
 ax2.plot((np.array(observation_times) - initial_epoch) / 3600.0, -noise_level * np.ones(len(observation_times)),
-         color='blue')
+         color='red')
 ax2.plot((np.array(observation_times) - initial_epoch) / 3600.0, 3 * noise_level * np.ones(len(observation_times)),
-         color='blue', linestyle='dotted', label='3sigma noise level')
+         color='red', linestyle='dotted', label='3sigma noise level')
 ax2.plot((np.array(observation_times) - initial_epoch) / 3600.0, -3 * noise_level * np.ones(len(observation_times)),
-         color='blue', linestyle='dotted')
+         color='red', linestyle='dotted')
 ax2.set_ylabel('Residuals [m/s]')
 ax2.set_xlabel('Time since initial epoch [hr]')
 ax2.set_title('Final iteration')
@@ -479,6 +514,28 @@ plt.figure()
 plt.imshow(np.abs(correlations), aspect='auto', interpolation='none')
 plt.colorbar(label='Absolute correlation [-]')
 plt.title('Correlation matrix')
+plt.xlabel('Parameter index [-]')
+plt.ylabel('Parameter index [-]')
+# plt.show()
+
+# Compute correlations in RSW
+rotation_matrix_correlations = np.identity(nb_parameters)
+for i in range(nb_arcs):
+    rotation_to_rsw = frame_conversion.inertial_to_rsw_rotation_matrix(arc_wise_initial_states[i])
+    rotation_matrix_correlations[i*6+0:i*6+3,i*6+0:i*6+3] = rotation_to_rsw
+    rotation_matrix_correlations[i*6+3:i*6+6,i*6+3:i*3+6] = rotation_to_rsw
+
+rsw_covariance = rotation_matrix_correlations @ covariance @ np.transpose( rotation_matrix_correlations )
+rsw_formal_errors = np.sqrt(np.diagonal(rsw_covariance))
+rsw_correlations = rsw_covariance
+for i in range(nb_parameters):
+    for j in range(nb_parameters):
+        rsw_correlations[i,j] = rsw_covariance[i,j] / (rsw_formal_errors[i] * rsw_formal_errors[j])
+
+plt.figure()
+plt.imshow(np.abs(rsw_correlations), aspect='auto', interpolation='none')
+plt.colorbar(label='Absolute correlation [-]')
+plt.title('Correlation matrix (state RSW)')
 plt.xlabel('Parameter index [-]')
 plt.ylabel('Parameter index [-]')
 plt.show()
