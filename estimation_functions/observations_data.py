@@ -44,7 +44,7 @@ def extract_recording_start_times_yml(folder: str, filenames: list[str], old_yml
             start_recording_times.append(time_pps + rx_time)
 
         else:
-            time = metadata["tracking"]["epoch"]
+            time = metadata["recording"]["time_start"]
             julian_date = jday(time.year, int(time.month), int(time.day), int(time.hour), int(time.minute),
                                int(0.0)) + float(time.second) / 86400.0
             start_recording_times.append((julian_date - j2000_days) * 86400.0)
@@ -80,8 +80,8 @@ def process_observations_new(filename: str, fraction_discarded: float = 0.1) -> 
 
     # Retrieve observations of interest
     for line in lines[nb_discarded_points + 1:nb_points - nb_discarded_points]:
-        result = line.strip().split(',')
-        observations.append([float(result[0]), float(result[2])])
+        result = line.strip().split()
+        observations.append([float(result[0]), float(result[1])])
     f.close()
 
     return np.array(observations)

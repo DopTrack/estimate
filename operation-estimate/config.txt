@@ -1,0 +1,5 @@
+satellite_name=FUNcube-1
+arc_definition=per_week
+start_time=2020-01-08 00.00
+estimate_days=28
+data_path=/Volumes/doptrack/products/L1C

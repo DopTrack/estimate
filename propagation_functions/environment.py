@@ -5,7 +5,7 @@ import numpy as np
 from tudatpy import constants
 from tudatpy.interface import spice
 from tudatpy.dynamics import environment_setup
-
+_SPICE_KERNELS_LOADED = False
 
 def get_drag_coefficient(mass, ref_area, b_star, from_tle):
     if from_tle:
@@ -32,15 +32,20 @@ def define_body_settings(spacecraft_name, multi_arc_ephemeris=False):
     return body_settings
 
 
-def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, spacecraft_name, multi_arc_ephemeris=False, tabulated_ephemeris={ }):
+def define_environment(mass, reference_area, drag_coefficient, srp_coefficient, spacecraft_name, multi_arc_ephemeris=False,tabulated_ephemeris=None):
 
-    # Load spice kernels
-    spice.load_standard_kernels()
+    global _SPICE_KERNELS_LOADED
 
-    # Define body settings
+    if not _SPICE_KERNELS_LOADED:
+        spice.load_standard_kernels()
+        _SPICE_KERNELS_LOADED = True
+
     body_settings = define_body_settings(spacecraft_name, multi_arc_ephemeris)
-    if tabulated_ephemeris:
-        body_settings.get(spacecraft_name).ephemeris_settings = environment_setup.ephemeris.tabulated(tabulated_ephemeris, "Earth", "J2000")
+
+    if tabulated_ephemeris is not None and len(tabulated_ephemeris) > 0:
+        body_settings.get(spacecraft_name).ephemeris_settings = environment_setup.ephemeris.tabulated(
+            tabulated_ephemeris, "Earth", "J2000"
+        )
 
     # Create system of bodies
     bodies = environment_setup.create_system_of_bodies(body_settings)

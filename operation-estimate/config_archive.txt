@@ -1,0 +1,5 @@
+satellite_name=FUNcube-1
+arc_definition=per_week
+start_time=2020-04-01 00.00
+estimate_days=14
+data_path=\\tudelft.net\staff-umbrella\doptrack\products\L1C

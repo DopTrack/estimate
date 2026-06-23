@@ -360,7 +360,7 @@ def define_biases(Doppler_models={}, passes_start_times=[], arc_start_times=[]):
     return biases.combined_bias(combined_biases)
 
 
-def define_parameters(parameters_list, bodies, propagator_settings, spacecraft_name, arc_start_times, arc_mid_times, pass_times_per_linkend=[], obs_models={}):
+def define_parameters(parameters_list, bodies, propagator_settings, spacecraft_name, arc_start_times, arc_mid_times, pass_times_per_linkend=[], obs_models={}, drag_start_times=None):
 
     parameter_settings = []
 
@@ -437,6 +437,18 @@ def define_parameters(parameters_list, bodies, propagator_settings, spacecraft_n
                 parameter_settings.append(parameters_setup.arcwise_constant_drag_coefficient(spacecraft_name, arc_start_times))
             elif parameters_list.get('drag_coefficient').get('type') == 'global':
                 parameter_settings.append(parameters_setup.constant_drag_coefficient(spacecraft_name))
+            elif parameters_list.get('drag_coefficient').get('type') == 'per_day':
+
+                if drag_start_times is None:
+                    raise ValueError("drag_start_times must be provided for per_day drag estimation.")
+
+                parameter_settings.append(
+                    parameters_setup.arcwise_constant_drag_coefficient(
+                        spacecraft_name,
+                        drag_start_times
+                    )
+    
+    )    
 
     # Solar radiation pressure coefficient(s)
     if "srp_coefficient" in parameters_list:
@@ -509,7 +521,7 @@ def simulate_observations_from_estimator(spacecraft_name, observation_times, est
     return observations_wrapper.simulate_observations(observation_simulation_settings, estimator.observation_simulators, bodies)
 
 
-def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs, nb_iterations):
+def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs, nb_iterations, parameters_list=None, obs_models=None, number_of_passes=None, number_of_drag_estimates=None):
 
     truth_parameters = parameters_to_estimate.parameter_vector
     nb_parameters = len(truth_parameters)
@@ -525,6 +537,68 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
         for j in range(3):
             inv_cov[i*6+j, i*6+j] = 1.0 / (apriori_covariance_position * apriori_covariance_position)
             inv_cov[i*6+3+j, i*6+3+j] = 1.0 / (apriori_covariance_velocity * apriori_covariance_velocity)
+    # ============================================================
+    # Automatic drag coefficient a-priori constraint
+    # ============================================================
+
+    if (
+        parameters_list is not None
+        and "drag_coefficient" in parameters_list
+        and parameters_list["drag_coefficient"]["estimate"]
+    ):
+
+        apriori_drag_coefficient = 0.5
+        drag_type = parameters_list["drag_coefficient"]["type"]
+
+        if drag_type == "global":
+            n_drag = 1
+        elif drag_type == "per_arc":
+            n_drag = nb_arcs
+        elif drag_type == "per_pass":
+            n_drag = number_of_passes
+        elif drag_type == "per_day":
+            n_drag = number_of_drag_estimates
+        else:
+            raise ValueError(f"Unknown drag coefficient type: {drag_type}")
+
+        drag_start_index = 6 * nb_arcs
+
+        # In current estimation.py, biases are appended before non-global Cd
+        if drag_type != "global":
+
+            if (
+                parameters_list.get("constant_absolute_bias", {}).get("estimate", False)
+                and obs_models.get("constant_absolute_bias", {}).get("time_interval") is not None
+            ):
+                interval = obs_models["constant_absolute_bias"]["time_interval"]
+
+                if interval == "global":
+                    drag_start_index += 1
+                elif interval == "per_arc":
+                    drag_start_index += nb_arcs
+                elif interval == "per_pass":
+                    drag_start_index += number_of_passes
+
+            if (
+                parameters_list.get("linear_absolute_bias", {}).get("estimate", False)
+                and obs_models.get("linear_absolute_bias", {}).get("time_interval") is not None
+            ):
+                interval = obs_models["linear_absolute_bias"]["time_interval"]
+
+                if interval == "global":
+                    drag_start_index += 1
+                elif interval == "per_arc":
+                    drag_start_index += nb_arcs
+                elif interval == "per_pass":
+                    drag_start_index += number_of_passes
+
+        print("Applying Cd a-priori constraint")
+        print("Cd type:", drag_type)
+        print("Cd start index:", drag_start_index)
+        print("Number of Cd parameters:", n_drag)
+
+        for i in range(drag_start_index, drag_start_index + n_drag):
+            inv_cov[i, i] = 1.0 / (apriori_drag_coefficient ** 2)
 
     # Define observations weights
     noise_level = 5.0
@@ -533,7 +607,7 @@ def run_estimation(estimator, parameters_to_estimate, observations_set, nb_arcs,
     # Create input object for estimation_functions, adding observations and parameter set information
     convergence_check = estimation_analysis.estimation_convergence_checker(nb_iterations)
     estimation_input = estimation_analysis.EstimationInput(observations_set, inv_cov, convergence_check)
-    estimation_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=True)
+    estimation_input.define_estimation_settings(reintegrate_variational_equations=True, save_design_matrix=False)
 
     # Perform estimation_functions and return pod_output
     return estimator.perform_estimation(estimation_input)
