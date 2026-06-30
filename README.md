@@ -45,6 +45,7 @@ This Software has been developed on ideas and software from the following develo
 - **Sam Fayolle**, Technische Universiteit Delft (Developer)
 - **Bart Root**  ![ORCID logo](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png) [0000-0001-7742-1434](https://orcid.org/0000-0001-7742-1434), Technische Universiteit Delft (Developer)
 - **Martin Søndergaard**, Technische Universiteit Delft (Developer)
+- **Emre Sıganık**, Technische Universiteit Delft (Developer)
 
 ## License
 The contents of this repository are licensed under a GNU General Public License v3.0 (see LICENSE file).
